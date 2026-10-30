@@ -132,13 +132,15 @@
     position:absolute;right:clamp(6px,2vw,26px);bottom:0;z-index:20;
     width:clamp(185px,42vh,375px); /* JSが動かない時の既定＝新「大」（旧・特大） */
     pointer-events:auto;cursor:pointer;
+    /* 長押しをブラウザに奪われないための3点セット（ドラッグ・選択・コールアウト抑止） */
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     /* 動きはCSSだけ（JSで毎フレーム動かさない＝軽い）。
        28秒のうち大半は「ゆらゆら待機」、一瞬だけ下に隠れて、ぴょんっと戻る */
     animation:mascot-life 28s ease-in-out infinite;
     transform-origin:bottom center;
     filter:drop-shadow(0 4px 6px rgba(60,40,20,.25));
   }
-  .mascot img{width:100%;display:block}
+  .mascot img{width:100%;display:block;-webkit-user-drag:none}
   /* キャラのタップ反応（吹き出し＋小ジャンプ）。不要になれば
      このCSSと、HTMLの .mascot-bubble、末尾の MascotFeature ブロックを消せば外せる */
   .mascot-bubble{
@@ -288,7 +290,7 @@
     <div class="plan-sub" id="planSub"></div>
   </div>
 
-  <div class="mascot" id="mascot" aria-hidden="true"><div class="mascot-bubble" id="mascotBubble"></div><img id="mascotImg" alt=""></div>
+  <div class="mascot" id="mascot" aria-hidden="true"><div class="mascot-bubble" id="mascotBubble"></div><img id="mascotImg" alt="" draggable="false"></div>
 
   <div class="drawer" id="drawer">
     <div class="drawer-head">
@@ -674,6 +676,7 @@ const MascotFeature = (() => {
   let bubbleTimer = null;
   let pressTimer = null;
   let longPressed = false;
+  let pressStart = 0;
 
   function save(){
     try { localStorage.setItem(KEY_V2, String(index)); } catch(e) {}
@@ -707,6 +710,7 @@ const MascotFeature = (() => {
   }
   function startPress(){
     longPressed = false;
+    pressStart = Date.now();
     clearTimeout(pressTimer);
     pressTimer = setTimeout(() => { longPressed = true; cycleSize(); }, 750);
   }
@@ -718,8 +722,11 @@ const MascotFeature = (() => {
   el.addEventListener("pointerdown", startPress);
   ["pointerup", "pointerleave", "pointercancel"].forEach(ev => el.addEventListener(ev, endPress));
   el.addEventListener("contextmenu", e => e.preventDefault());
+  el.addEventListener("dragstart", e => e.preventDefault());
   el.addEventListener("click", () => {
     if (longPressed) { longPressed = false; return; } /* 長押しはサイズ変更だけ */
+    const held = pressStart ? Date.now() - pressStart : 0;
+    if (held >= 650) { cycleSize(); return; } /* タイマーが奪われた場合の保険：押下時間でも判定 */
     react();
   });
 

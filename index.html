@@ -130,7 +130,7 @@
   /* ---------- キャラクター（右下のマスコット） ---------- */
   .mascot{
     position:absolute;right:clamp(6px,2vw,26px);bottom:0;z-index:20;
-    width:clamp(92px,17vh,150px);
+    width:clamp(185px,42vh,375px); /* JSが動かない時の既定＝新「大」（旧・特大） */
     pointer-events:auto;cursor:pointer;
     /* 動きはCSSだけ（JSで毎フレーム動かさない＝軽い）。
        28秒のうち大半は「ゆらゆら待機」、一瞬だけ下に隠れて、ぴょんっと戻る */
@@ -139,6 +139,27 @@
     filter:drop-shadow(0 4px 6px rgba(60,40,20,.25));
   }
   .mascot img{width:100%;display:block}
+  /* キャラのタップ反応（吹き出し＋小ジャンプ）。不要になれば
+     このCSSと、HTMLの .mascot-bubble、末尾の MascotFeature ブロックを消せば外せる */
+  .mascot-bubble{
+    position:absolute;right:6%;bottom:calc(100% - 6px);z-index:21;
+    max-width:9em;padding:.28em .65em;border-radius:999px;
+    background:rgba(255,253,247,.96);border:3px solid #d9cba6;
+    color:var(--ink);font-size:clamp(17px,3.2vh,28px);font-weight:800;line-height:1.25;
+    text-align:center;white-space:nowrap;
+    opacity:0;transform:translateY(8px) scale(.92);pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease;
+    box-shadow:0 6px 16px rgba(90,64,32,.22);
+  }
+  .mascot-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+  .mascot.reacting img{animation:mascot-react .65s ease}
+  @keyframes mascot-react{
+    0%{transform:translateY(0) scale(1,1)}
+    30%{transform:translateY(-9%) scale(.96,1.05) rotate(-2deg)}
+    55%{transform:translateY(2%) scale(1.06,.92) rotate(1deg)}
+    78%{transform:translateY(-4%) scale(.99,1.02)}
+    100%{transform:translateY(0) scale(1,1)}
+  }
   @keyframes mascot-life{
     0%,100% {transform:translateY(6%) rotate(0deg)}
     10%     {transform:translateY(2%) rotate(-1.2deg)}   /* ゆらゆら */
@@ -267,7 +288,7 @@
     <div class="plan-sub" id="planSub"></div>
   </div>
 
-  <div class="mascot" aria-hidden="true"><img id="mascotImg" alt=""></div>
+  <div class="mascot" id="mascot" aria-hidden="true"><div class="mascot-bubble" id="mascotBubble"></div><img id="mascotImg" alt=""></div>
 
   <div class="drawer" id="drawer">
     <div class="drawer-head">
@@ -278,7 +299,7 @@
     <div class="drawer-note">緑の ● がついている日は予定があります ／ 赤い数字は土・日・祝日 ／ 金色のワクが「今日」です</div>
   </div>
 
-  <div class="hint">家族用：予定を長押しで書きかえ ／ キャラをタップで大きさ変更</div>
+  <div class="hint">家族用：予定を長押しで書きかえ ／ キャラをタップで反応・長押しで大きさ変更</div>
   <div class="toast" id="toast"></div>
 
   <div class="modal-back" id="editBack">
@@ -615,29 +636,95 @@ $("btnNoPlan").addEventListener("click", () => {
 $("btnCancelEdit").addEventListener("click", closeEditor);
 $("editBack").addEventListener("click", e => { if (e.target === $("editBack")) closeEditor(); });
 
-/* ---------- キャラクター：タップで大きさ循環（小→中→大→特大→超特大→小…） ---------- */
-const MASCOT_SIZES = [
-  { name:"小",   width:"clamp(92px,17vh,150px)"  },  /* 初版のサイズ */
-  { name:"中",   width:"clamp(120px,24vh,215px)" },
-  { name:"大",   width:"clamp(150px,32vh,285px)" },
-  { name:"特大", width:"clamp(185px,42vh,375px)" },
-  { name:"超特大", width:"clamp(230px,52vh,470px)" }  /* 実機で「もう1段階大きくても良い」と判明し追加（2026-10-27） */
-];
-let mascotIdx = 3; /* 初期サイズは「特大」（Rebirthの実機感想で決定・2026-10-27） */
-try {
-  const saved = parseInt(localStorage.getItem("elderCal_mascotSize") || "3", 10);
-  if (saved >= 0 && saved < MASCOT_SIZES.length) mascotIdx = saved;
-} catch(e) {}
-function applyMascotSize(){
-  document.querySelector(".mascot").style.width = MASCOT_SIZES[mascotIdx].width;
-}
-applyMascotSize();
-document.querySelector(".mascot").addEventListener("click", () => {
-  mascotIdx = (mascotIdx + 1) % MASCOT_SIZES.length;
-  applyMascotSize();
-  try { localStorage.setItem("elderCal_mascotSize", String(mascotIdx)); } catch(e) {}
-  toast("キャラクターの大きさ：" + MASCOT_SIZES[mascotIdx].name);
-});
+/* ============================================================
+   MascotFeature（キャラ機能：独立ブロック）
+   - タップ：小さく跳ねて、ひとこと吹き出しを出す
+   - 長押し：大きさを循環する
+   - サイズ段階は 2026-10-30 に再基準化：
+     旧「中」→新「小」、旧「大」→新「中」、旧「特大」→新「大」、
+     旧「超特大」→新「特大」。その上に新「超特大」「超超特大」を追加。
+   - 外し方：このブロックと、HTMLの .mascot-bubble、CSSの
+     .mascot-bubble / .mascot.reacting を消せば、キャラは静止表示に戻る。
+   ============================================================ */
+const MascotFeature = (() => {
+  const SIZES = [
+    { name:"小",     width:"clamp(120px,24vh,215px)" },  /* 旧「中」 */
+    { name:"中",     width:"clamp(150px,32vh,285px)" },  /* 旧「大」 */
+    { name:"大",     width:"clamp(185px,42vh,375px)" },  /* 旧「特大」 */
+    { name:"特大",   width:"clamp(230px,52vh,470px)" },  /* 旧「超特大」 */
+    { name:"超特大", width:"clamp(275px,62vh,565px)" },  /* 新規 */
+    { name:"超超特大", width:"clamp(320px,72vh,660px)" } /* 新規 */
+  ];
+  const DEFAULT_INDEX = 2;              /* 既定は新「大」＝旧「特大」の実寸 */
+  const OLD_TO_NEW = [0, 0, 1, 2, 3];   /* 旧index→新index（旧「小」は新「小」に丸める） */
+  const KEY_V2 = "elderCal_mascotSizeV2";
+  const KEY_V1 = "elderCal_mascotSize";
+  const el = document.getElementById("mascot");
+  const bubble = document.getElementById("mascotBubble");
+  if (!el) return { enabled:false };
+
+  let index = DEFAULT_INDEX;
+  try {
+    const v2 = parseInt(localStorage.getItem(KEY_V2) || "", 10);
+    const v1 = parseInt(localStorage.getItem(KEY_V1) || "", 10);
+    if (Number.isInteger(v2) && v2 >= 0 && v2 < SIZES.length) index = v2;
+    else if (Number.isInteger(v1) && v1 >= 0 && v1 < OLD_TO_NEW.length) index = OLD_TO_NEW[v1];
+  } catch(e) {}
+
+  let bubbleTimer = null;
+  let pressTimer = null;
+  let longPressed = false;
+
+  function save(){
+    try { localStorage.setItem(KEY_V2, String(index)); } catch(e) {}
+  }
+  function applySize(){
+    el.style.width = SIZES[index].width;
+  }
+  function cycleSize(){
+    index = (index + 1) % SIZES.length;
+    applySize(); save();
+    toast("キャラクターの大きさ：" + SIZES[index].name);
+  }
+  function message(){
+    const h = new Date().getHours();
+    const common = ["ぴょん！", "こんにちは", "みてるよ", "きょうも げんき"];
+    if (h < 11) common.push("おはよう");
+    else if (h >= 17) common.push("こんばんは");
+    return common[Math.floor(Math.random() * common.length)];
+  }
+  function react(){
+    el.classList.remove("reacting");
+    void el.offsetWidth; /* アニメーションを最初から再生させる */
+    el.classList.add("reacting");
+    if (bubble) {
+      bubble.textContent = message();
+      bubble.classList.add("show");
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(() => bubble.classList.remove("show"), 1600);
+    }
+    setTimeout(() => el.classList.remove("reacting"), 700);
+  }
+  function startPress(){
+    longPressed = false;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => { longPressed = true; cycleSize(); }, 750);
+  }
+  function endPress(){
+    clearTimeout(pressTimer);
+  }
+
+  applySize();
+  el.addEventListener("pointerdown", startPress);
+  ["pointerup", "pointerleave", "pointercancel"].forEach(ev => el.addEventListener(ev, endPress));
+  el.addEventListener("contextmenu", e => e.preventDefault());
+  el.addEventListener("click", () => {
+    if (longPressed) { longPressed = false; return; } /* 長押しはサイズ変更だけ */
+    react();
+  });
+
+  return { enabled:true, sizes:SIZES, applySize, cycleSize, react };
+})();
 </script>
 </body>
 </html>

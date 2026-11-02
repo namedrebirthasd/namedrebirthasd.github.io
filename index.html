@@ -642,6 +642,7 @@ $("editBack").addEventListener("click", e => { if (e.target === $("editBack")) c
    MascotFeature（キャラ機能：独立ブロック）
    - タップ：小さく跳ねて、ひとこと吹き出しを出す
    - 長押し：大きさを循環する
+   - 2026-11-02：吹き出しに名前「チョコ」（仮決定）を追加。本人が名付けたら NAME を変える
    - サイズ段階は 2026-10-30 に再基準化：
      旧「中」→新「小」、旧「大」→新「中」、旧「特大」→新「大」、
      旧「超特大」→新「特大」。その上に新「超特大」「超超特大」を追加。
@@ -661,6 +662,7 @@ const MascotFeature = (() => {
   const OLD_TO_NEW = [0, 0, 1, 2, 3];   /* 旧index→新index（旧「小」は新「小」に丸める） */
   const KEY_V2 = "elderCal_mascotSizeV2";
   const KEY_V1 = "elderCal_mascotSize";
+  const NAME = "チョコ";   /* 2026-11-02 仮決定。本人が名付けたら、ここ1箇所を変える */
   const el = document.getElementById("mascot");
   const bubble = document.getElementById("mascotBubble");
   if (!el) return { enabled:false };
@@ -691,9 +693,10 @@ const MascotFeature = (() => {
   }
   function message(){
     const h = new Date().getHours();
-    const common = ["ぴょん！", "こんにちは", "みてるよ", "きょうも げんき"];
-    if (h < 11) common.push("おはよう");
-    else if (h >= 17) common.push("こんばんは");
+    const common = ["ぴょん！", "こんにちは", "みてるよ", "きょうも げんき",
+                    NAME + "だよ", NAME + "だよ。みてるよ"];
+    if (h < 11) common.push("おはよう", NAME + "だよ。おはよう");
+    else if (h >= 17) common.push("こんばんは", NAME + "だよ。こんばんは");
     return common[Math.floor(Math.random() * common.length)];
   }
   function react(){

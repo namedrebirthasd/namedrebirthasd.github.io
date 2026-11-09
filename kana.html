@@ -118,6 +118,31 @@
     78%{ transform:translateX(0);} 100%{ transform:translateX(105%);}
   }
   #cutinText{ font-size:clamp(32px,6.5vw,56px); font-weight:bold; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,0.25); letter-spacing:0.08em; }
+  /* 音オン/オフボタン */
+  #sndBtn{
+    position:fixed; top:10px; left:10px; z-index:75; cursor:pointer;
+    font-family:inherit; font-size:17px; font-weight:bold; color:#6b4d14;
+    background:#fff8ea; border:3px solid #b08d4f; border-radius:999px; padding:8px 16px;
+    box-shadow:0 3px 0 rgba(90,60,20,0.35);
+  }
+  /* 正解・不正解の全画面ジャッジ（音が聞こえなくても一目で分かる） */
+  #judge{
+    position:fixed; inset:0; z-index:72; display:none; pointer-events:none;
+    align-items:center; justify-content:center; flex-direction:column;
+  }
+  #judge.show{ display:flex; }
+  #judgeMark{ font-size:clamp(130px,36vw,320px); line-height:1.05; animation:judgePop 0.95s ease forwards; }
+  #judgeText{
+    font-size:clamp(44px,10vw,96px); font-weight:bold; margin-top:2px;
+    animation:judgePop 0.95s ease forwards; text-shadow:0 4px 0 rgba(255,255,255,0.85), 0 0 26px rgba(255,255,255,0.9);
+  }
+  @keyframes judgePop{
+    0%{ transform:scale(2.7); opacity:0; }
+    16%{ transform:scale(0.94); opacity:1; }
+    26%{ transform:scale(1.05); opacity:1; }
+    78%{ transform:scale(1.05); opacity:1; }
+    100%{ transform:scale(1.12); opacity:0; }
+  }
   /* 中断確認 */
   #confirmBack{
     position:fixed; inset:0; background:rgba(50,35,10,0.55); z-index:85;
@@ -264,6 +289,9 @@
 </div>
 
 <button id="fsBtn">⛶ ぜんがめん</button>
+<button id="sndBtn">🔊 おと オン</button>
+
+<div id="judge"><div id="judgeMark">⭕</div><div id="judgeText">せいかい！</div></div>
 
 <div id="cutin"><div id="cutinBand"><div id="cutinText"></div></div></div>
 
@@ -350,14 +378,94 @@ function tone(f, t0, dur, vol){
   }catch(e){}
 }
 const SE = {
-  good(){ [660,880,1100].forEach((f,i)=>tone(f, i*0.09, 0.22, 0.2)); },
-  bad(){ tone(196,0,0.25,0.2); tone(147,0.08,0.3,0.2); },
+  good(){ [660,880,1100].forEach((f,i)=>tone(f, i*0.09, 0.24, 0.3)); tone(196,0,0.32,0.3); },
+  bad(){ tone(196,0,0.28,0.28); tone(147,0.08,0.34,0.28); },
   flip(i){ tone(520 + i*90, 0, 0.12, 0.18); },
   win(){ [523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f, i*0.12, 0.3, 0.2)); },
   ready(){ tone(440,0,0.18,0.2); },
   go(){ tone(880,0,0.3,0.24); tone(1174,0.02,0.3,0.18); },
   tick(){ tone(1200,0,0.05,0.07); }
 };
+
+/* ================= ほのぼのBGM（コード生成ループ） ================= */
+function bgmTone(f, when, dur, vol, type){
+  try{
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, when);
+    g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+    o.connect(g); g.connect(AC.destination); o.start(when); o.stop(when + dur + 0.05);
+  }catch(e){}
+}
+const BGM_CHORDS = [
+  [261.63,329.63,392.00],  /* C */
+  [196.00,246.94,293.66],  /* G */
+  [220.00,261.63,329.63],  /* Am */
+  [174.61,220.00,261.63]   /* F */
+];
+const BGM_BASS = [130.81, 98.00, 110.00, 87.31];
+const BGM_MEL = [
+  784,659,587,659, 784,0,659,0,
+  587,494,587,784, 880,0,784,0,
+  880,784,659,784, 880,0,1046,0,
+  880,784,698,784, 880,0,784,659
+];
+const BGM_STEP = 0.3; /* 8分音符（BPM100） */
+const BGM = { on:true, playing:false, timer:null, step:0, nextTime:0 };
+try{ BGM.on = localStorage.getItem("kana_othello_bgm") !== "0"; }catch(e){}
+function bgmScheduleStep(s, when){
+  const bar = Math.floor(s/8), idx = s % 8;
+  if(idx === 0){
+    BGM_CHORDS[bar].forEach(f => bgmTone(f, when, BGM_STEP*8*0.95, 0.04, "triangle"));
+    bgmTone(BGM_BASS[bar], when, BGM_STEP*4, 0.085, "sine");
+  }
+  if(idx === 4) bgmTone(BGM_BASS[bar], when, BGM_STEP*3, 0.06, "sine");
+  const mel = BGM_MEL[s];
+  if(mel){
+    bgmTone(mel, when, 0.36, 0.105, "sine");
+    bgmTone(mel*2, when, 0.18, 0.028, "sine");
+  }
+}
+function startBGM(){
+  if(BGM.playing || !BGM.on) return;
+  try{
+    if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state === "suspended") AC.resume();
+  }catch(e){ return; }
+  BGM.playing = true; BGM.step = 0; BGM.nextTime = AC.currentTime + 0.08;
+  BGM.timer = setInterval(()=>{
+    while(BGM.nextTime < AC.currentTime + 0.3){
+      bgmScheduleStep(BGM.step, BGM.nextTime);
+      BGM.nextTime += BGM_STEP;
+      BGM.step = (BGM.step + 1) % 32;
+    }
+  }, 110);
+}
+function stopBGM(){
+  BGM.playing = false;
+  if(BGM.timer){ clearInterval(BGM.timer); BGM.timer = null; }
+}
+const sndBtn = document.getElementById("sndBtn");
+function syncSndBtn(){ sndBtn.textContent = BGM.on ? "🎵 BGM オン" : "🎵 BGM オフ"; }
+sndBtn.addEventListener("click", ()=>{
+  BGM.on = !BGM.on;
+  try{ localStorage.setItem("kana_othello_bgm", BGM.on ? "1" : "0"); }catch(e){}
+  if(BGM.on) startBGM(); else stopBGM();
+  syncSndBtn();
+});
+syncSndBtn();
+window.addEventListener("pointerdown", ()=>{ if(BGM.on) startBGM(); }, { once:true });
+
+/* 全画面ジャッジ（音が聞こえなくても正解・不正解が一目で分かる） */
+function showJudge(ok){
+  const j = document.getElementById("judge");
+  document.getElementById("judgeMark").textContent = ok ? "⭕" : "❌";
+  const tx = document.getElementById("judgeText");
+  tx.textContent = ok ? "せいかい！" : "ざんねん…";
+  tx.style.color = ok ? "#e8452f" : "#4a6b8a";
+  j.classList.remove("show"); void j.offsetWidth; j.classList.add("show");
+  setTimeout(()=>j.classList.remove("show"), 990);
+}
 
 /* ================= 画面遷移（モザイク） ================= */
 const mosaicEl = document.getElementById("mosaic");
@@ -716,6 +824,7 @@ function openQuiz(r, c){
 function answerQuiz(btn, correct){
   if(!currentCell) return; // 時間切れ等で既に閉じたクイズへの遅延クリックを無効化
   stopTimer();
+  showJudge(correct);
   [...choicesEl.children].forEach(b=>{ b.disabled = true; b.classList.add("revealed"); });
   const [r,c] = currentCell;
   if(correct){
@@ -747,7 +856,8 @@ window.__game = {
   get board(){ return board; },
   get turn(){ return turn; },
   get settings(){ return SET; },
-  flipsFor, applyClaim, buildQuiz, openQuiz, startGame, nameMatches,
+  flipsFor, applyClaim, buildQuiz, openQuiz, startGame, nameMatches, showJudge,
+  get bgm(){ return { on: BGM.on, playing: BGM.playing, step: BGM.step }; },
   get sessionId(){ return sessionId; },
   get busy(){ return busy; },
   get claims(){ return claims; },

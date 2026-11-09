@@ -145,6 +145,7 @@
   <div class="chips">
     <div class="chip" id="coinChip">🪙 コイン <span id="coinCount">0</span> まい</div>
     <div class="chip">⭐ あたり <span id="winCount">0</span> 回</div>
+    <button class="chip" id="fsBtn" style="cursor:pointer; font-family:inherit;">⛶ ぜんがめん</button>
   </div>
 </header>
 
@@ -385,12 +386,30 @@ document.getElementById("soundBtn").addEventListener("click", function(){
 });
 document.addEventListener("pointerdown", ()=>{ BGM.start(); }, { once:true });
 
+/* ================= 全画面（ページ遷移で全画面が外れる対策） =================
+   ブラウザの決まりで「ページを開いた瞬間に自動で全画面」はできないため、
+   最初のタップ（＝まわすボタンを押す動作そのもの）で全画面に入る。
+   手動のオン／オフ用に「ぜんがめん」ボタンも用意。 */
+const fsBtn = document.getElementById("fsBtn");
+function requestFS(){
+  const el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+}
+function syncFsLabel(){ fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん"; }
+fsBtn.addEventListener("click", ()=>{
+  if(document.fullscreenElement){ document.exitFullscreen().catch(()=>{}); }
+  else requestFS();
+});
+document.addEventListener("fullscreenchange", syncFsLabel);
+document.addEventListener("pointerdown", ()=>{ if(!document.fullscreenElement) requestFS(); }, { once:true });
+
 /* テスト・管理用フック（画面には出ない） */
 window.__slot = {
   get spinning(){ return spinning; },
   get winCount(){ return SAVE.wins; },
   get coins(){ return SAVE.coins; },
   get bgmPlaying(){ return !!BGM.timer; },
+  get fs(){ return !!document.fullscreenElement; },
   get symbols(){ return reels.map(r=>r.sym.textContent); },
   spin, decide: decideResult,
   /* コインとあたり回数のリセット（コンソールで __slot.reset() ） */

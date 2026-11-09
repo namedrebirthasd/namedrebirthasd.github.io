@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>どの ゲームで あそぶ？</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:#fdf6e3; color:#33302a; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:26px 16px 40px;
+    touch-action:manipulation; user-select:none; -webkit-user-select:none;
+  }
+  h1{
+    font-size:clamp(30px, 6vw, 52px); color:#7a4a12; text-align:center; line-height:1.5; margin-top:4vh;
+  }
+  .games{ display:flex; flex-direction:column; gap:26px; margin-top:5vh; width:min(92vw, 640px); }
+  a.gamebtn{
+    display:flex; align-items:center; gap:20px; text-decoration:none;
+    background:#fff; border:5px solid #f0b429; border-radius:26px; padding:26px 28px;
+    box-shadow:0 8px 0 rgba(140,90,20,0.35);
+  }
+  a.gamebtn:active{ transform:translateY(4px); box-shadow:0 3px 0 rgba(140,90,20,0.35); }
+  a.gamebtn .emo{ font-size:clamp(56px, 11vw, 84px); line-height:1; }
+  a.gamebtn .tx .t{ font-size:clamp(28px, 5.4vw, 42px); font-weight:bold; color:#4c3d20; line-height:1.35; }
+  a.gamebtn .tx .d{ font-size:clamp(17px, 3vw, 22px); font-weight:bold; color:#97835e; margin-top:4px; }
+  a.backbtn{
+    margin-top:6vh; display:inline-block; text-decoration:none;
+    font-size:clamp(22px, 4vw, 30px); font-weight:bold; color:#20506e;
+    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:16px 34px;
+    box-shadow:0 5px 0 rgba(40,90,130,0.35);
+  }
+  a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,0.35); }
+  #fsBtn{
+    position:fixed; top:10px; right:10px; z-index:10; cursor:pointer;
+    font-family:inherit; font-size:19px; font-weight:bold; color:#6b4d14;
+    background:#fff8ea; border:3px solid #b08d4f; border-radius:999px; padding:10px 20px;
+    box-shadow:0 3px 0 rgba(90,60,20,0.35);
+  }
+</style>
+</head>
+<body>
+<button id="fsBtn">⛶ ぜんがめん</button>
+<h1>どの ゲームで<br>あそぶ？</h1>
+<div class="games">
+  <a class="gamebtn" href="slot.html">
+    <span class="emo">🎰</span>
+    <span class="tx"><span class="t">チョコちゃん スロット</span><span class="d" style="display:block;">ボタンを おすだけ！ コインが ふえるよ</span></span>
+  </a>
+  <a class="gamebtn" href="kana.html">
+    <span class="emo">🎲</span>
+    <span class="tx"><span class="t">かなオセロ</span><span class="d" style="display:block;">クイズに こたえて マスを とり合う ゲーム</span></span>
+  </a>
+</div>
+<a class="backbtn" href="index.html">🕐 とけいに もどる</a>
+<script>
+"use strict";
+/* 全画面：ボタンで切り替え＋最初のタップで自動的に全画面（スロットと同じ方式） */
+const fsBtn = document.getElementById("fsBtn");
+function syncFsLabel(){ fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん"; }
+fsBtn.addEventListener("click", ()=>{
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else document.documentElement.requestFullscreen().catch(()=>{});
+});
+document.addEventListener("fullscreenchange", syncFsLabel);
+let fsTried = false;
+window.addEventListener("pointerdown", ()=>{
+  if(!fsTried && !document.fullscreenElement){
+    fsTried = true;
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}, { capture:true });
+</script>
+</body>
+</html>

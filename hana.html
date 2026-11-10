@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>おはなばたけ</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  #field{ position:fixed; inset:0; overflow:hidden; transition:background 1.6s ease; cursor:pointer;
+    background:linear-gradient(#aee3ff 0%, #d8f3ff 26%, #9ed98a 27%, #7cc465 60%, #5da84e 100%); }
+  #field.summer{ background:linear-gradient(#7ecbff 0%, #c8efff 24%, #8fd07e 25%, #69bb57 60%, #4f9c44 100%); }
+  #field.autumn{ background:linear-gradient(#ffd9a0 0%, #ffecc9 26%, #c9c06a 27%, #a9a24e 60%, #8a8438 100%); }
+  #field.winter{ background:linear-gradient(#c9d9ee 0%, #eef4fb 28%, #e8eef2 29%, #d7e2e8 65%, #bcccd6 100%); }
+
+  /* 上部バー */
+  #topbar{ position:fixed; top:0; left:0; right:0; z-index:30; display:flex; align-items:flex-start; gap:8px; padding:10px; pointer-events:none; }
+  .tbtn{ pointer-events:auto; cursor:pointer; font-family:inherit; font-size:19px; font-weight:bold; color:#6b4d14;
+    background:#fff8ea; border:3px solid #b08d4f; border-radius:999px; padding:10px 18px; box-shadow:0 3px 0 rgba(90,60,20,.35); }
+  .tbtn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(90,60,20,.35); }
+  #counter{ margin:0 auto; background:rgba(255,252,240,.94); border:4px solid #e88bb0; border-radius:999px;
+    padding:8px 30px; font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
+  #seasonPill{ background:rgba(255,252,240,.94); border:3px solid #7db3dd; border-radius:999px; padding:10px 18px;
+    font-size:clamp(18px,3vw,24px); font-weight:bold; color:#20506e; white-space:nowrap; }
+
+  /* 花 */
+  .flower{ position:absolute; transform:translate(-50%,-88%); text-align:center; pointer-events:none; z-index:5; }
+  .flower .emo{ display:block; line-height:1; filter:drop-shadow(0 3px 3px rgba(40,80,30,.35)); }
+  .flower .shadow{ display:block; margin:2px auto 0; width:56%; height:8px; border-radius:50%; background:rgba(30,70,20,.28); }
+  @keyframes popIn{ 0%{ transform:scale(.1) rotate(-14deg);} 55%{ transform:scale(1.25) rotate(5deg);} 75%{ transform:scale(.94) rotate(-2deg);} 100%{ transform:scale(1) rotate(0);} }
+  @keyframes budPulse{ 0%{ transform:scale(.4);} 60%{ transform:scale(1.05);} 100%{ transform:scale(.9);} }
+  @keyframes sway{ 0%,100%{ transform:rotate(-3.2deg);} 50%{ transform:rotate(3.2deg);} }
+  @keyframes fadeOld{ to{ transform:scale(.5); opacity:.5; } }
+  .bud .emo{ animation:budPulse .38s ease-out forwards; }
+  .bloomed .emo{ animation:popIn .55s cubic-bezier(.2,1.6,.4,1) forwards; }
+  .swaying .emo{ animation:sway var(--sway,3.4s) ease-in-out infinite; }
+  .old{ animation:fadeOld 1.2s ease forwards; }
+
+  /* ちょうちょ・はち */
+  .critter{ position:absolute; z-index:8; font-size:52px; cursor:pointer; filter:drop-shadow(0 4px 4px rgba(0,0,0,.25)); }
+
+  /* チョコちゃん */
+  #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(96px,17vw,150px); pointer-events:none; }
+  #choco img{ width:100%; display:block; }
+  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(96px,17vw,150px) + 6px); z-index:20; max-width:min(62vw,430px);
+    background:#fff; border:4px solid #f0b429; border-radius:20px; padding:12px 18px;
+    font-size:clamp(19px,3.4vw,27px); font-weight:bold; color:#5a4512; box-shadow:0 4px 0 rgba(140,90,20,.3); }
+  #bubble:after{ content:""; position:absolute; left:44px; bottom:-16px; border:8px solid transparent; border-top:10px solid #f0b429; }
+
+  /* お祝い・季節のお知らせ（中央の大きな文字） */
+  #announce{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none; opacity:0; transition:opacity .45s ease; text-align:center; padding:20px; }
+  #announce.show{ opacity:1; }
+  #announce .big{ font-size:clamp(44px,9vw,92px); font-weight:bold; color:#fff;
+    text-shadow:0 4px 0 rgba(160,50,90,.55), 0 0 34px rgba(255,120,170,.75); line-height:1.3; }
+  #announce .sub{ margin-top:14px; font-size:clamp(24px,4.6vw,40px); font-weight:bold; color:#fff;
+    text-shadow:0 3px 0 rgba(90,60,20,.5); }
+  #fadeVeil{ position:fixed; inset:0; z-index:35; background:#fff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
+
+  #fx{ position:fixed; inset:0; z-index:15; pointer-events:none; }
+
+  /* 下部 */
+  #bottombar{ position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center; padding:12px; pointer-events:none; }
+  a.backbtn{ pointer-events:auto; text-decoration:none; font-size:clamp(22px,4vw,30px); font-weight:bold; color:#20506e;
+    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:14px 34px; box-shadow:0 5px 0 rgba(40,90,130,.35); }
+  a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,.35); }
+  #hint{ position:fixed; left:0; right:0; bottom:96px; z-index:10; text-align:center; pointer-events:none;
+    font-size:clamp(20px,3.6vw,28px); font-weight:bold; color:rgba(255,255,255,.95); text-shadow:0 2px 4px rgba(40,80,30,.6);
+    transition:opacity 1s ease; }
+</style>
+</head>
+<body>
+<div id="field"></div>
+<canvas id="fx"></canvas>
+
+<div id="topbar">
+  <button class="tbtn" id="bgmBtn">🎵 おんがく オン</button>
+  <button class="tbtn" id="seBtn">🔔 おと オン</button>
+  <div id="counter">おはな 🌸 <span id="countNum">0</span> ほん</div>
+  <div id="seasonPill">🌸 はる</div>
+  <button class="tbtn" id="fsBtn">⛶ ぜんがめん</button>
+</div>
+
+<div id="bubble">タップすると<br>おはなが さくよ 🌷</div>
+<div id="choco"><img src="character.png" alt="" onerror="this.parentNode.style.display='none'"></div>
+<div id="hint">すきな ところを タップしてね 👆</div>
+
+<div id="fadeVeil"></div>
+<div id="announce"><div class="big"></div><div class="sub"></div></div>
+
+<div id="bottombar"><a class="backbtn" href="index.html">🕐 とけいに もどる</a></div>
+
+<script>
+"use strict";
+/* ============================================================
+   おはなばたけ v1.0（老人向け・負けなし・タップだけ）
+   演出の標準仕様: 音は全部に当てる／開花には「芽の間」／
+   要所は初回から派手に（画面1/4級パーティクル）／季節遷移はフェード＋間
+   ============================================================ */
+const field = document.getElementById("field");
+const fx = document.getElementById("fx"), fctx = fx.getContext("2d");
+const countNum = document.getElementById("countNum");
+const seasonPill = document.getElementById("seasonPill");
+const bubble = document.getElementById("bubble");
+const announceEl = document.getElementById("announce");
+const veil = document.getElementById("fadeVeil");
+const hint = document.getElementById("hint");
+
+/* ---------- 状態 ---------- */
+let total = parseInt(localStorage.getItem("hana_total") || "0", 10) || 0;
+let seasonIdx = 0, bloomsInSeason = 0;
+let combo = 0, comboTimer = null, firstTap = true;
+let flowers = []; // {el, old}
+const SEASONS = [
+  { key:"spring", name:"🌸 はる", pool:["🌸","🌷","🌼","💮","🌸","🌷"], critter:"🦋", ambient:"petal" },
+  { key:"summer", name:"🌻 なつ", pool:["🌻","🌺","🌹","🌼","💐","🌻"], critter:"🐝", ambient:null },
+  { key:"autumn", name:"🍁 あき", pool:["🌼","🌹","💐","🏵️","🌼","🌹"], critter:"🦋", ambient:"leaf" },
+  { key:"winter", name:"⛄ ふゆ", pool:["🌺","💮","🌼","🌺","💮","⛄"], critter:null, ambient:"snow" }
+];
+const BUBBLE_LINES = ["きれいだね 🌷","いい おはな！","すてき すてき ✨","おはなが よろこんでるよ","もっと さかせよう 🌸"];
+countNum.textContent = total;
+
+/* ---------- 音（WebAudio 合成・素材なし） ---------- */
+let AC = null, bgmGain = null, seGain = null, bgmOn = localStorage.getItem("hana_bgm") !== "0", seOn = localStorage.getItem("hana_se") !== "0";
+function audioInit(){
+  if(AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  bgmGain = AC.createGain(); bgmGain.gain.value = bgmOn ? 0.15 : 0; bgmGain.connect(AC.destination);
+  seGain = AC.createGain(); seGain.gain.value = seOn ? 0.55 : 0; seGain.connect(AC.destination);
+  startBGM();
+}
+function tone(freq, t0, dur, type, vol, dest){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(dest || seGain);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function seTap(){ if(!AC) return; const t = AC.currentTime; tone(300, t, 0.09, "triangle", 0.25); }
+function seBud(){ if(!AC) return; const t = AC.currentTime; const o = AC.createOscillator(), g = AC.createGain();
+  o.type="sine"; o.frequency.setValueAtTime(380, t); o.frequency.exponentialRampToValueAtTime(760, t + 0.3);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+  o.connect(g); g.connect(seGain); o.start(t); o.stop(t + 0.35); }
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00];
+function seBloom(big){
+  if(!AC) return; const t = AC.currentTime;
+  const f = PENTA[Math.min(combo, PENTA.length - 1)];
+  tone(f, t, 0.55, "sine", 0.5); tone(f * 2, t, 0.35, "sine", 0.18);
+  tone(f * 1.5, t + 0.05, 0.4, "triangle", 0.15);
+  if(big){ [0,1,2,3,4].forEach(i => tone(PENTA[i * 2] || 1568, t + i * 0.07, 0.5, "sine", 0.35)); }
+}
+function seSparkle(){ if(!AC) return; const t = AC.currentTime; [1568, 2093, 2637].forEach((f,i)=>tone(f, t + i * 0.05, 0.3, "sine", 0.3)); }
+function seFanfare(){ if(!AC) return; const t = AC.currentTime;
+  [523,659,784,1047].forEach((f,i)=>{ tone(f, t + i * 0.13, 0.5, "triangle", 0.4); tone(f, t + i * 0.13, 0.5, "sine", 0.25); });
+  tone(1319, t + 0.55, 0.9, "sine", 0.4); tone(1568, t + 0.55, 0.9, "sine", 0.22); }
+function seSeason(){ if(!AC) return; const t = AC.currentTime;
+  [784, 988, 1175, 1568].forEach((f,i)=>tone(f, t + i * 0.11, 0.45, "sine", 0.3)); }
+/* BGM: オルゴール風の短いループ（C–G–Am–F） */
+let bgmTimer = null, bgmStep = 0;
+const BGM_NOTES = [659,784,880,784, 587,659,784,659, 440,659,880,659, 523,587,659,587];
+function startBGM(){
+  if(bgmTimer || !AC) return;
+  bgmTimer = setInterval(()=>{
+    if(!bgmOn) return;
+    const t = AC.currentTime;
+    tone(BGM_NOTES[bgmStep % BGM_NOTES.length], t, 0.5, "sine", 0.5, bgmGain);
+    if(bgmStep % 4 === 0){ const bass = [131, 98, 110, 87][(bgmStep / 4) % 4 | 0]; tone(bass, t, 1.6, "triangle", 0.5, bgmGain); }
+    bgmStep++;
+  }, 430);
+}
+
+/* ---------- パーティクル（canvas） ---------- */
+function fxResize(){ fx.width = innerWidth; fx.height = innerHeight; }
+addEventListener("resize", fxResize); fxResize();
+let parts = [];
+function burst(x, y, n, colors, opt){
+  opt = opt || {};
+  for(let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, sp = (opt.speed || 3.4) * (0.3 + Math.random() * 0.9);
+    parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.6,
+      life: 46 + Math.random() * 34, max: 80, size: (opt.size || 7) * (0.6 + Math.random() * 0.8),
+      color: colors[i % colors.length], shape: opt.shape || "petal", rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.25 });
+  }
+}
+function confettiStorm(){
+  const colors = ["#ff6b9d","#ffd93d","#6bcbff","#95e06c","#c39bff","#ff9f45"];
+  for(let i = 0; i < 170; i++){
+    parts.push({ x: Math.random() * fx.width, y: -20 - Math.random() * fx.height * 0.35,
+      vx: (Math.random() - 0.5) * 1.6, vy: 1.4 + Math.random() * 2.4,
+      life: 150 + Math.random() * 90, max: 240, size: 8 + Math.random() * 7,
+      color: colors[i % colors.length], shape: "confetti", rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.3 });
+  }
+}
+let ambientAcc = 0;
+function fxLoop(){
+  fctx.clearRect(0, 0, fx.width, fx.height);
+  const amb = SEASONS[seasonIdx].ambient;
+  if(amb && ++ambientAcc % 9 === 0 && parts.length < 340){
+    const glyph = amb === "snow" ? "#ffffff" : amb === "leaf" ? "#e08a3c" : "#ffc7dd";
+    parts.push({ x: Math.random() * fx.width, y: -12, vx: (Math.random() - 0.5) * 0.7, vy: 0.7 + Math.random() * 0.8,
+      life: 9999, max: 9999, size: amb === "snow" ? 4.5 : 6.5, color: glyph, shape: "drift", rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.06, ambient: true });
+  }
+  parts = parts.filter(p => p.life > 0 && p.y < fx.height + 30);
+  for(const p of parts){
+    p.life--; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    if(!p.ambient){ p.vy += p.shape === "confetti" ? 0.02 : 0.055; p.vx *= 0.985; }
+    const al = p.ambient ? 0.85 : Math.min(1, p.life / 30);
+    fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(p.rot); fctx.globalAlpha = al; fctx.fillStyle = p.color;
+    if(p.shape === "confetti") fctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    else if(p.shape === "drift"){ fctx.beginPath(); fctx.arc(0, 0, p.size / 2, 0, 6.3); fctx.fill(); }
+    else { fctx.beginPath(); fctx.ellipse(0, 0, p.size / 2, p.size / 3.4, 0, 0, 6.3); fctx.fill(); }
+    fctx.restore();
+  }
+  requestAnimationFrame(fxLoop);
+}
+fxLoop();
+
+/* ---------- お知らせ（大きな文字） ---------- */
+let announceTimer = null;
+function announce(big, sub, holdMs){
+  announceEl.querySelector(".big").textContent = big;
+  announceEl.querySelector(".sub").textContent = sub || "";
+  announceEl.classList.add("show");
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => announceEl.classList.remove("show"), holdMs || 2100);
+}
+function say(text){ bubble.innerHTML = text; }
+
+/* ---------- 開花 ---------- */
+function plantFlower(x, y, isBig){
+  const s = SEASONS[seasonIdx];
+  const el = document.createElement("div");
+  el.className = "flower bud";
+  el.style.left = x + "px"; el.style.top = y + "px";
+  const size = isBig ? 132 : 52 + Math.random() * 34;
+  el.innerHTML = '<span class="emo" style="font-size:' + size + 'px">🌱</span><span class="shadow"></span>';
+  field.appendChild(el);
+  seBud();
+  /* 芽の「間」: 少し溜めてから咲く（大きな花は溜めも長い） */
+  setTimeout(() => {
+    const emo = s.pool[Math.floor(Math.random() * s.pool.length)];
+    const span = el.querySelector(".emo");
+    span.textContent = emo;
+    el.classList.remove("bud"); el.classList.add("bloomed");
+    setTimeout(() => { el.classList.add("swaying"); span.style.setProperty("--sway", (2.8 + Math.random() * 1.6) + "s"); span.style.animation = ""; }, 600);
+    seBloom(isBig);
+    const colors = ["#ff9fc6","#ffd93d","#ffffff","#b5e48c"];
+    burst(x, y - size * 0.7, isBig ? 64 : 22, isBig ? colors.concat(["#6bcbff","#c39bff"]) : colors, { size: isBig ? 10 : 7.5, speed: isBig ? 5.2 : 3.4 });
+    total++; bloomsInSeason++;
+    localStorage.setItem("hana_total", String(total));
+    countNum.textContent = total;
+    flowers.push(el);
+    if(flowers.length > 90){ const old = flowers.shift(); old.classList.add("old"); setTimeout(() => old.remove(), 1300); }
+    if(Math.random() < 0.3) say(BUBBLE_LINES[Math.floor(Math.random() * BUBBLE_LINES.length)]);
+    if(isBig){ say("おおきな おはな！<br>すごーい 🌟"); announce("おおきな おはな！", "すごい すごい 🌟", 1900); }
+    checkMilestone(); checkSeason();
+  }, isBig ? 700 : 380);
+}
+function checkMilestone(){
+  if(total > 0 && (total % 50 === 0 || total === 30)){
+    confettiStorm(); seFanfare();
+    announce(total + "ほん さきました！", "すごいね！ 🎉", 2600);
+    say(total + "ほん！<br>おめでとう 🎉");
+  }
+}
+function checkSeason(){
+  if(bloomsInSeason < 15) return;
+  bloomsInSeason = 0;
+  /* 季節の遷移: フェード → 保持（一拍）→ 新しい季節 */
+  veil.style.opacity = "0.85";
+  setTimeout(() => {
+    seasonIdx = (seasonIdx + 1) % SEASONS.length;
+    const s = SEASONS[seasonIdx];
+    field.className = s.key === "spring" ? "" : s.key;
+    seasonPill.textContent = s.name;
+    seSeason();
+    announce(s.name + "に なったよ", "おはなも かわるよ", 2000);
+    say(s.name + "だね。<br>たのしみ 🌈");
+    veil.style.opacity = "0";
+  }, 850);
+}
+
+/* ---------- タップ ---------- */
+field.addEventListener("pointerdown", (e) => {
+  audioInit(); if(AC && AC.state === "suspended") AC.resume();
+  if(firstTap){
+    firstTap = false;
+    hint.style.opacity = "0";
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+  }
+  seTap();
+  /* コンボ: 続けてタップすると音階が上がる。8連続で次が大きな花 */
+  combo++;
+  clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => { combo = 0; }, 1600);
+  const isBig = combo > 0 && combo % 8 === 0;
+  const y = Math.max(innerHeight * 0.22, Math.min(e.clientY, innerHeight - 90));
+  plantFlower(e.clientX, y, isBig);
+});
+
+/* ---------- ちょうちょ・はち（環境の命＋タップのおまけ） ---------- */
+function spawnCritter(){
+  const s = SEASONS[seasonIdx];
+  if(s.critter){
+    const el = document.createElement("div");
+    el.className = "critter"; el.textContent = s.critter;
+    const fromLeft = Math.random() < 0.5;
+    const y0 = innerHeight * (0.25 + Math.random() * 0.3);
+    el.style.left = (fromLeft ? -70 : innerWidth + 10) + "px"; el.style.top = y0 + "px";
+    field.appendChild(el);
+    const dx = fromLeft ? innerWidth + 160 : -(innerWidth + 160);
+    const anim = el.animate([
+      { transform: "translate(0,0)" },
+      { transform: "translate(" + dx * 0.35 + "px," + (-36 - Math.random() * 30) + "px)" },
+      { transform: "translate(" + dx * 0.7 + "px," + (18 + Math.random() * 26) + "px)" },
+      { transform: "translate(" + dx + "px," + (-14) + "px)" }
+    ], { duration: 13000 + Math.random() * 6000, easing: "ease-in-out" });
+    anim.onfinish = () => el.remove();
+    el.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation(); audioInit();
+      seSparkle();
+      burst(ev.clientX, ev.clientY, 26, ["#ffe66d","#fff","#ffb3d9"], { size: 8, speed: 4 });
+      say(s.critter === "🐝" ? "はちさん こんにちは！" : "ちょうちょ つかまえた！<br>（すぐ にがしたよ）");
+      el.remove();
+    });
+  }
+  setTimeout(spawnCritter, 6000 + Math.random() * 5000);
+}
+setTimeout(spawnCritter, 3500);
+
+/* ---------- 上部ボタン ---------- */
+const bgmBtn = document.getElementById("bgmBtn"), seBtn = document.getElementById("seBtn"), fsBtn = document.getElementById("fsBtn");
+function syncBtns(){
+  bgmBtn.textContent = bgmOn ? "🎵 おんがく オン" : "🎵 おんがく オフ";
+  seBtn.textContent = seOn ? "🔔 おと オン" : "🔔 おと オフ";
+  fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん";
+}
+bgmBtn.addEventListener("click", (e) => { e.stopPropagation(); audioInit(); bgmOn = !bgmOn; localStorage.setItem("hana_bgm", bgmOn ? "1" : "0"); if(bgmGain) bgmGain.gain.value = bgmOn ? 0.15 : 0; syncBtns(); });
+seBtn.addEventListener("click", (e) => { e.stopPropagation(); audioInit(); seOn = !seOn; localStorage.setItem("hana_se", seOn ? "1" : "0"); if(seGain) seGain.gain.value = seOn ? 0.55 : 0; if(seOn) seSparkle(); syncBtns(); });
+fsBtn.addEventListener("click", (e) => { e.stopPropagation(); if(document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => {}); });
+document.addEventListener("fullscreenchange", syncBtns);
+syncBtns();
+
+/* テスト・保守用フック */
+window.__hana = {
+  get total(){ return total; }, get season(){ return SEASONS[seasonIdx].key; },
+  get flowers(){ return flowers.length; }, plant: (x, y, big) => plantFlower(x, y, !!big),
+  milestone: () => { confettiStorm(); }
+};
+</script>
+</body>
+</html>

@@ -292,7 +292,6 @@ field.addEventListener("pointerdown", (e) => {
   if(firstTap){
     firstTap = false;
     hint.style.opacity = "0";
-    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
   }
   seTap();
   /* コンボ: 続けてタップすると音階が上がる。8連続で次が大きな花 */

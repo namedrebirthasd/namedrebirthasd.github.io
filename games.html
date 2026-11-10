@@ -68,13 +68,7 @@ fsBtn.addEventListener("click", ()=>{
   else document.documentElement.requestFullscreen().catch(()=>{});
 });
 document.addEventListener("fullscreenchange", syncFsLabel);
-let fsTried = false;
-window.addEventListener("pointerdown", ()=>{
-  if(!fsTried && !document.fullscreenElement){
-    fsTried = true;
-    document.documentElement.requestFullscreen().catch(()=>{});
-  }
-}, { capture:true });
+/* 全画面はボタンで手動のみ（2026-11-10 本人指示：初回タップ自動全画面は廃止） */
 </script>
 </body>
 </html>

@@ -401,7 +401,7 @@ fsBtn.addEventListener("click", ()=>{
   else requestFS();
 });
 document.addEventListener("fullscreenchange", syncFsLabel);
-document.addEventListener("pointerdown", ()=>{ if(!document.fullscreenElement) requestFS(); }, { once:true });
+/* 全画面はボタンで手動のみ（2026-11-10 廃止：初回タップ自動全画面） */
 
 /* テスト・管理用フック（画面には出ない） */
 window.__slot = {

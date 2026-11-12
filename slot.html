@@ -425,5 +425,17 @@ window.__slot = {
   forceMiss(){ forceNext = [0,1,2]; }
 };
 </script>
+
+<!-- 埋め込み（時計の窓の中）対応: 見た目はそのまま、戻るリンクの挙動だけ合図に変える -->
+<style>html.embedded #fsBtn{ display:none !important; }</style>
+<script>
+if (window.self !== window.top) {
+  document.documentElement.classList.add("embedded");
+  document.addEventListener("click", function(e){
+    var a = e.target.closest && e.target.closest('a[href="index.html"]');
+    if (a) { e.preventDefault(); parent.postMessage("closeGame", "*"); }
+  });
+}
+</script>
 </body>
 </html>

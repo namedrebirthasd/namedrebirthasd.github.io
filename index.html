@@ -748,5 +748,38 @@ const MascotFeature = (() => {
   return { enabled:true, sizes:SIZES, applySize, cycleSize, react };
 })();
 </script>
+
+<!-- ============ ゲーム用オーバーレイ（iframe方式, 2026-11-13） ============
+     時計の文書は遷移しないので全画面が維持される。ゲーム側の
+     「とけいに もどる」は合図（postMessage "closeGame"）で窓を閉じる。 -->
+<style>
+  #gameOverlay{ position:fixed; inset:0; z-index:999; background:#000; display:none; }
+  #gameOverlay.open{ display:block; }
+  #gameFrame{ width:100%; height:100%; border:0; display:block; background:#fff; }
+  #gameClose{
+    position:absolute; top:10px; right:10px; z-index:2; cursor:pointer;
+    font-family:inherit; font-size:21px; font-weight:bold; color:#20506e;
+    background:#dceefb; border:3px solid #7db3dd; border-radius:999px; padding:10px 22px;
+    box-shadow:0 3px 0 rgba(40,90,130,.35);
+  }
+</style>
+<div id="gameOverlay">
+  <iframe id="gameFrame" title="ゲーム" allowfullscreen></iframe>
+  <button id="gameClose">✕ ゲームを とじる</button>
+</div>
+<script>
+(function(){
+  "use strict";
+  var overlay = document.getElementById("gameOverlay");
+  var frame = document.getElementById("gameFrame");
+  function openGames(){ frame.src = "games.html"; overlay.classList.add("open"); }
+  function closeGames(){ overlay.classList.remove("open"); frame.src = "about:blank"; }
+  var entry = document.querySelector("a.slot-entry");
+  if(entry) entry.addEventListener("click", function(e){ e.preventDefault(); openGames(); });
+  document.getElementById("gameClose").addEventListener("click", closeGames);
+  addEventListener("message", function(e){ if(e.data === "closeGame") closeGames(); });
+  window.__clockOverlay = { open: openGames, close: closeGames, isOpen: function(){ return overlay.classList.contains("open"); } };
+})();
+</script>
 </body>
 </html>

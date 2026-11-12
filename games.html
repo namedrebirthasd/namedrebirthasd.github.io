@@ -70,5 +70,17 @@ fsBtn.addEventListener("click", ()=>{
 document.addEventListener("fullscreenchange", syncFsLabel);
 /* 全画面はボタンで手動のみ（2026-11-10 本人指示：初回タップ自動全画面は廃止） */
 </script>
+
+<!-- 埋め込み（時計の窓の中）対応: 見た目はそのまま、戻るリンクの挙動だけ合図に変える -->
+<style>html.embedded #fsBtn{ display:none !important; }</style>
+<script>
+if (window.self !== window.top) {
+  document.documentElement.classList.add("embedded");
+  document.addEventListener("click", function(e){
+    var a = e.target.closest && e.target.closest('a[href="index.html"]');
+    if (a) { e.preventDefault(); parent.postMessage("closeGame", "*"); }
+  });
+}
+</script>
 </body>
 </html>

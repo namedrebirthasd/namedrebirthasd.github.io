@@ -78,6 +78,15 @@
   }
   .date-row .youbi .icon{font-size:.95em;line-height:1}
 
+  /* ---------- 天気（Open-Meteo・ラベル付きで曜日アイコンと混同させない） ---------- */
+  .weather-row{display:flex;justify-content:center;margin-top:clamp(4px,1.2vh,10px)}
+  #weatherPill{
+    display:none;align-items:center;gap:.3em;
+    font-size:clamp(21px,3.8vh,34px);font-weight:800;color:#20506e;
+    background:#eaf3fc;border:3px solid #c9def2;border-radius:999px;padding:.12em .8em;
+  }
+  #weatherPill .wicon{font-size:1.25em;line-height:1}
+
   /* ---------- 時刻（いちばん大きく） ---------- */
   .clock-row{
     display:flex;align-items:stretch;justify-content:center;gap:clamp(10px,2vw,22px);
@@ -290,6 +299,8 @@
     <span class="youbi"><span id="youbiText">-</span><span class="icon" id="youbiIcon">⚪</span></span>
   </div>
 
+  <div class="weather-row"><div id="weatherPill">そとの てんき <span class="wicon" id="wIcon"></span><span id="wWord"></span>　いま <span id="wNow"></span>℃　きょうは <span id="wMin"></span>〜<span id="wMax"></span>℃</div></div>
+
   <div class="clock-row">
     <div class="ampm" id="ampm">午前</div>
     <div class="clock"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span></div>
@@ -374,7 +385,7 @@ const NO_PLAN = "予定なし";
 /* 曜日のアイコン（設計書どおり：月=白 / 火=赤 / 水=青 / 木=緑 / 金=黄 / 土=土星 / 日=太陽）
    配列は getDay() の順（0=日 … 6=土） */
 const WEEK = [
-  { name:"日", icon:"☀️" },  // 日：太陽
+  { name:"日", icon:"🟠" },  // 日：オレンジ丸（旧☀️は天気と間違えられたため変更 2026-11-17）
   { name:"月", icon:"⚪" },  // 月：白
   { name:"火", icon:"🔴" },  // 火：赤
   { name:"水", icon:"🔵" },  // 水：青
@@ -515,6 +526,45 @@ function render(now){
 
   lastDayKey = now.getFullYear() + "-" + now.getMonth() + "-" + now.getDate();
 }
+
+/* ================= 天気（Open-Meteo・キー不要） =================
+   取得できなければピルは出さない（時計の本機能には一切影響させない）。
+   前回の成功値を localStorage に持ち、起動直後はそれを先に出す。 */
+const WMO = [
+  [0,"☀️","はれ"],[1,"🌤️","はれ"],[2,"🌤️","くもり まじり"],[3,"☁️","くもり"],
+  [45,"🌫️","きり"],[48,"🌫️","きり"],[51,"🌦️","あめ"],[53,"🌦️","あめ"],[55,"🌦️","あめ"],
+  [56,"🌦️","あめ"],[57,"🌦️","あめ"],[61,"☔","あめ"],[63,"☔","あめ"],[65,"☔","あめ"],
+  [66,"☔","あめ"],[67,"☔","あめ"],[71,"☃️","ゆき"],[73,"☃️","ゆき"],[75,"☃️","ゆき"],[77,"☃️","ゆき"],
+  [80,"☔","にわかあめ"],[81,"☔","にわかあめ"],[82,"☔","にわかあめ"],
+  [85,"☃️","ゆき"],[86,"☃️","ゆき"],[95,"⛈️","かみなり"],[96,"⛈️","かみなり"],[99,"⛈️","かみなり"]
+];
+function wmoOf(code){ const hit = WMO.find(e => e[0] === code); return hit ? [hit[1], hit[2]] : ["🌡️",""]; }
+function showWeather(w){
+  const [icon, word] = wmoOf(w.code);
+  $("wIcon").textContent = icon;
+  $("wWord").textContent = word;
+  $("wNow").textContent = Math.round(w.now);
+  $("wMin").textContent = Math.round(w.min);
+  $("wMax").textContent = Math.round(w.max);
+  $("weatherPill").style.display = "inline-flex";
+}
+function loadWeather(){
+  try {
+    const raw = localStorage.getItem("clock_weather");
+    if (raw) { const w = JSON.parse(raw); if (Date.now() - w.ts < 3*3600*1000) showWeather(w); }
+  } catch(e) {}
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=34.6251&longitude=135.4888&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&forecast_days=1")
+    .then(r => r.json())
+    .then(j => {
+      const w = { code: j.current.weather_code, now: j.current.temperature_2m,
+                  max: j.daily.temperature_2m_max[0], min: j.daily.temperature_2m_min[0], ts: Date.now() };
+      try { localStorage.setItem("clock_weather", JSON.stringify(w)); } catch(e) {}
+      showWeather(w);
+    })
+    .catch(() => { /* 失敗時は無言（キャッシュ表示のまま or 非表示） */ });
+}
+loadWeather();
+setInterval(loadWeather, 30*60*1000);
 
 /* 軽量設計：5秒に1回だけ目覚めて、「分」が変わった時だけ画面を書き換える。
    毎フレーム処理・requestAnimationFrame は使わない。 */

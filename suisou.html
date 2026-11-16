@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>すいぞくかん</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  }
+  #tank{ position:fixed; inset:0; overflow:hidden; cursor:pointer;
+    background:linear-gradient(#3f9fd8 0%, #2f83c4 34%, #1f66a3 68%, #174e82 100%); }
+  /* 光のゆらぎ */
+  .ray{ position:absolute; top:-12%; width:120px; height:130%; pointer-events:none;
+    background:linear-gradient(rgba(255,255,220,.16), rgba(255,255,220,0) 75%);
+    transform:rotate(14deg); filter:blur(6px); animation:raySway 9s ease-in-out infinite; }
+  @keyframes raySway{ 0%,100%{ transform:rotate(11deg) translateX(0);} 50%{ transform:rotate(17deg) translateX(26px);} }
+  /* 砂底 */
+  #sand{ position:absolute; left:0; right:0; bottom:0; height:11%; z-index:2;
+    background:linear-gradient(#e8d193, #d9bd7a 55%, #c8a75e); border-radius:46% 54% 0 0 / 26px 26px 0 0; }
+  .deco{ position:absolute; z-index:3; pointer-events:none; line-height:1; }
+  .weed{ transform-origin:50% 100%; animation:weedSway 4.6s ease-in-out infinite; }
+  @keyframes weedSway{ 0%,100%{ transform:rotate(-5deg);} 50%{ transform:rotate(5deg);} }
+
+  /* 上部バー */
+  #topbar{ position:fixed; top:0; left:0; right:0; z-index:30; display:flex; align-items:flex-start; gap:8px; padding:10px; pointer-events:none; }
+  .tbtn{ pointer-events:auto; cursor:pointer; font-family:inherit; font-size:19px; font-weight:bold; color:#123c5e;
+    background:#eaf6ff; border:3px solid #5b9bd0; border-radius:999px; padding:10px 18px; box-shadow:0 3px 0 rgba(20,60,100,.35); }
+  .tbtn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(20,60,100,.35); }
+  #counter{ margin:0 auto; background:rgba(240,250,255,.95); border:4px solid #ffb84d; border-radius:999px;
+    padding:8px 30px; font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#9a5a00; box-shadow:0 4px 0 rgba(140,90,10,.3); white-space:nowrap; }
+
+  /* 魚 */
+  .fish{ position:absolute; z-index:6; pointer-events:none; line-height:1; will-change:transform;
+    filter:drop-shadow(0 4px 4px rgba(0,30,60,.35)); }
+  .fish .in{ display:block; }
+  @keyframes wiggle{ 0%,100%{ transform:rotate(-7deg);} 50%{ transform:rotate(7deg);} }
+  .fish.happy .in{ animation:wiggle .18s ease-in-out 4; }
+  @keyframes spin{ from{ transform:rotate(0);} to{ transform:rotate(360deg);} }
+  .fish.spin .in{ animation:spin .55s ease-out; }
+
+  /* ごはん（餌） */
+  .food{ position:absolute; z-index:5; width:15px; height:15px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle at 35% 35%, #e8a34e, #a86414); box-shadow:0 1px 2px rgba(0,0,0,.3); }
+
+  /* 波紋・泡・ハート */
+  .ripple{ position:absolute; z-index:4; border:4px solid rgba(255,255,255,.75); border-radius:50%; pointer-events:none;
+    transform:translate(-50%,-50%); animation:rip .8s ease-out forwards; }
+  @keyframes rip{ from{ width:16px; height:10px; opacity:.95;} to{ width:130px; height:74px; opacity:0;} }
+  .bubbleP{ position:absolute; z-index:4; border:2px solid rgba(255,255,255,.8); background:rgba(255,255,255,.18);
+    border-radius:50%; pointer-events:none; }
+  .heart{ position:absolute; z-index:9; pointer-events:none; animation:heartUp 1.1s ease-out forwards; }
+  @keyframes heartUp{ 0%{ transform:translate(-50%,-50%) scale(.5); opacity:0;} 25%{ opacity:1;} 100%{ transform:translate(-50%,-190%) scale(1.25); opacity:0;} }
+  .spark{ position:absolute; z-index:9; pointer-events:none; animation:sparkFly .8s ease-out forwards; }
+  @keyframes sparkFly{ from{ transform:translate(-50%,-50%) scale(1); opacity:1;} to{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity:0;} }
+
+  /* チョコちゃん */
+  #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(96px,17vw,150px); pointer-events:none; }
+  #choco img{ width:100%; display:block; }
+  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(96px,17vw,150px) + 6px); z-index:20; max-width:min(62vw,430px);
+    background:#fff; border:4px solid #f0b429; border-radius:20px; padding:12px 18px;
+    font-size:clamp(19px,3.4vw,27px); font-weight:bold; color:#5a4512; box-shadow:0 4px 0 rgba(140,90,20,.3); }
+  #bubble:after{ content:""; position:absolute; left:44px; bottom:-16px; border:8px solid transparent; border-top:10px solid #f0b429; }
+
+  #announce{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none; opacity:0; transition:opacity .45s ease; text-align:center; padding:20px; }
+  #announce.show{ opacity:1; }
+  #announce .big{ font-size:clamp(44px,9vw,92px); font-weight:bold; color:#fff;
+    text-shadow:0 4px 0 rgba(10,70,120,.55), 0 0 34px rgba(120,210,255,.8); line-height:1.3; }
+  #announce .sub{ margin-top:14px; font-size:clamp(24px,4.6vw,40px); font-weight:bold; color:#fff;
+    text-shadow:0 3px 0 rgba(10,50,90,.5); }
+  #fadeVeil{ position:fixed; inset:0; z-index:35; background:#eaf7ff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
+
+  /* 下部 */
+  #bottombar{ position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center; padding:12px; pointer-events:none; }
+  a.backbtn{ pointer-events:auto; text-decoration:none; font-size:clamp(22px,4vw,30px); font-weight:bold; color:#20506e;
+    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:14px 34px; box-shadow:0 5px 0 rgba(40,90,130,.35); }
+  a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,.35); }
+  #hint{ position:fixed; left:0; right:0; bottom:96px; z-index:10; text-align:center; pointer-events:none;
+    font-size:clamp(20px,3.6vw,28px); font-weight:bold; color:rgba(255,255,255,.95); text-shadow:0 2px 4px rgba(10,50,90,.65);
+    transition:opacity 1s ease; }
+</style>
+</head>
+<body>
+<div id="tank">
+  <div class="ray" style="left:12%"></div>
+  <div class="ray" style="left:46%; animation-delay:-3s"></div>
+  <div class="ray" style="left:78%; animation-delay:-6s"></div>
+  <div id="sand"></div>
+  <div class="deco weed" style="left:4%;  bottom:6%; font-size:74px;">🌿</div>
+  <div class="deco weed" style="left:88%; bottom:5%; font-size:88px; animation-delay:-2s;">🌿</div>
+  <div class="deco weed" style="left:64%; bottom:4%; font-size:56px; animation-delay:-1s;">🌿</div>
+  <div class="deco" style="left:16%; bottom:5%; font-size:52px;">🪸</div>
+  <div class="deco" style="left:76%; bottom:4%; font-size:44px;">🐚</div>
+  <div class="deco" style="left:34%; bottom:3%; font-size:38px;">🪨</div>
+</div>
+
+<div id="topbar">
+  <button class="tbtn" id="bgmBtn">🎵 おんがく オン</button>
+  <button class="tbtn" id="seBtn">🔔 おと オン</button>
+  <div id="counter">ごはん 🐠 <span id="countNum">0</span> こ</div>
+  <button class="tbtn" id="fsBtn">⛶ ぜんがめん</button>
+</div>
+
+<div id="bubble">みずを タップすると<br>ごはんが おちるよ 🐠</div>
+<div id="choco"><img src="character.png" alt="" onerror="this.parentNode.style.display='none'"></div>
+<div id="hint">すきな ところを タップしてね 👆</div>
+
+<div id="fadeVeil" style="opacity:1"></div>
+<div id="announce"><div class="big"></div><div class="sub"></div></div>
+
+<div id="bottombar"><a class="backbtn" href="index.html">🕐 とけいに もどる</a></div>
+
+<script>
+"use strict";
+/* ============================================================
+   すいぞくかん v1.0（老人向け・負けなし・タップだけ）
+   みずをタップ → ごはんが沈む → おさかなが集まって食べる。
+   失敗なし・制限時間なし。眺めているだけでも成立する設計。
+   ============================================================ */
+const tank = document.getElementById("tank");
+const countNum = document.getElementById("countNum");
+const bubble = document.getElementById("bubble");
+const announceEl = document.getElementById("announce");
+const veil = document.getElementById("fadeVeil");
+const hint = document.getElementById("hint");
+const W = () => window.innerWidth, H = () => window.innerHeight;
+const rand = (a,b) => a + Math.random()*(b-a);
+const SAND_H = () => H() * 0.11;
+
+/* ---------- 状態 ---------- */
+let eaten = parseInt(localStorage.getItem("suisou_eaten") || "0", 10) || 0;
+countNum.textContent = eaten;
+let taps = 0;
+
+/* ---------- 音（WebAudio合成・素材なし） ---------- */
+let AC = null;
+let bgmOn = localStorage.getItem("suisou_bgm") !== "0";
+let seOn  = localStorage.getItem("suisou_se")  !== "0";
+function ac(){
+  if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if(AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(freq, t0, dur, type, vol, slideTo){
+  if(!seOn && type !== "bgm") return;
+  const a = ac(), o = a.createOscillator(), g = a.createGain();
+  o.type = type === "bgm" ? "sine" : type;
+  o.frequency.setValueAtTime(freq, t0);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(a.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function plop(){ if(!seOn) return; const a = ac(); tone(420, a.currentTime, 0.22, "sine", 0.25, 110); }
+function munch(){ if(!seOn) return; const a = ac(), t = a.currentTime;
+  tone(660, t, 0.07, "triangle", 0.16); tone(520, t + 0.09, 0.09, "triangle", 0.16); }
+function happy(){ if(!seOn) return; const a = ac(), t = a.currentTime;
+  [523,659,784].forEach((f,i)=> tone(f, t + i*0.09, 0.16, "sine", 0.14)); }
+function fanfare(){ if(!seOn) return; const a = ac(), t = a.currentTime;
+  [523,659,784,1047,784,1047].forEach((f,i)=> tone(f, t + i*0.13, 0.3, "triangle", 0.18)); }
+
+/* BGM：ゆったりオルゴール風（五音階アルペジオ＋低い土台） */
+const PENTA = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3];
+let bgmTimer = null, bgmStep = 0;
+function bgmTick(){
+  if(!bgmOn) return;
+  const a = ac(), t = a.currentTime + 0.05;
+  const f = PENTA[[0,2,4,5,4,2,3,1][bgmStep % 8]];
+  tone(f, t, 1.4, "bgm", 0.055);
+  tone(f * 2, t, 0.9, "bgm", 0.02);
+  if(bgmStep % 4 === 0) tone(130.8, t, 2.6, "bgm", 0.045);
+  bgmStep++;
+  bgmTimer = setTimeout(bgmTick, 1150);
+}
+function bgmStart(){ if(bgmTimer || !bgmOn) return; bgmTick(); }
+function bgmStop(){ clearTimeout(bgmTimer); bgmTimer = null; }
+
+const bgmBtn = document.getElementById("bgmBtn");
+const seBtn = document.getElementById("seBtn");
+function syncBtns(){
+  bgmBtn.textContent = bgmOn ? "🎵 おんがく オン" : "🎵 おんがく オフ";
+  seBtn.textContent = seOn ? "🔔 おと オン" : "🔔 おと オフ";
+}
+bgmBtn.addEventListener("click", (e)=>{ e.stopPropagation(); bgmOn = !bgmOn;
+  localStorage.setItem("suisou_bgm", bgmOn ? "1" : "0"); syncBtns(); if(bgmOn){ ac(); bgmStart(); } else bgmStop(); });
+seBtn.addEventListener("click", (e)=>{ e.stopPropagation(); seOn = !seOn;
+  localStorage.setItem("suisou_se", seOn ? "1" : "0"); syncBtns(); if(seOn) plop(); });
+syncBtns();
+
+/* 全画面（手動ボタンのみ） */
+const fsBtn = document.getElementById("fsBtn");
+function syncFsLabel(){ fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん"; }
+fsBtn.addEventListener("click", (e)=>{ e.stopPropagation();
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else document.documentElement.requestFullscreen().catch(()=>{}); });
+document.addEventListener("fullscreenchange", syncFsLabel);
+
+/* ---------- 魚たち ---------- */
+const FISH_DEFS = [
+  { emo:"🐠", size:76 }, { emo:"🐠", size:58 }, { emo:"🐟", size:66 },
+  { emo:"🐡", size:62 }, { emo:"🐠", size:50 }, { emo:"🐟", size:54 },
+  { emo:"🦐", size:44 },
+];
+const fishes = [];
+function makeFish(def, i){
+  const el = document.createElement("div");
+  el.className = "fish";
+  el.innerHTML = `<span class="in" style="font-size:${def.size}px">${def.emo}</span>`;
+  tank.appendChild(el);
+  const f = {
+    el, size: def.size,
+    x: rand(W()*0.15, W()*0.85), y: rand(H()*0.25, H()*0.7),
+    tx: 0, ty: 0, dir: 1, speed: rand(11, 20), chase: rand(66, 84),
+    target: null, phase: rand(0, 6.28), happyUntil: 0,
+  };
+  f.tx = f.x; f.ty = f.y;
+  fishes.push(f);
+  return f;
+}
+FISH_DEFS.forEach(makeFish);
+/* カメ（ゆっくり・大きめ） */
+const turtle = makeFish({ emo:"🐢", size:92 }, 99); turtle.speed = 7; turtle.chase = 26;
+/* カニ（砂底を横歩き） */
+const crabEl = document.createElement("div");
+crabEl.className = "fish"; crabEl.innerHTML = `<span class="in" style="font-size:52px">🦀</span>`;
+tank.appendChild(crabEl);
+const crab = { x: W()*0.3, dir: 1 };
+
+/* ---------- ごはん ---------- */
+const foods = [];
+function dropFood(x, y){
+  for(let i = 0; i < 3; i++){
+    const el = document.createElement("div");
+    el.className = "food";
+    tank.appendChild(el);
+    foods.push({ el, x: x + rand(-16, 16), y: y + rand(-6, 10), vy: rand(24, 36),
+      sway: rand(0, 6.28), landed: 0, dead: false });
+  }
+}
+
+/* ---------- エフェクト ---------- */
+function ripple(x, y){
+  const el = document.createElement("div");
+  el.className = "ripple"; el.style.left = x + "px"; el.style.top = y + "px";
+  tank.appendChild(el); setTimeout(()=> el.remove(), 850);
+}
+function bubbleP(x, y, big){
+  const el = document.createElement("div");
+  el.className = "bubbleP";
+  const s = big ? rand(14, 26) : rand(6, 14);
+  el.style.width = el.style.height = s + "px";
+  el.style.left = x + "px"; el.style.top = y + "px";
+  tank.appendChild(el);
+  const drift = rand(-14, 14);
+  el.animate([
+    { transform:"translate(0,0)", opacity:.95 },
+    { transform:`translate(${drift}px, ${-(y - 8)}px)`, opacity:.25 },
+  ], { duration: rand(1400, 2400), easing:"ease-out" }).onfinish = ()=> el.remove();
+}
+function heart(x, y){
+  const el = document.createElement("div");
+  el.className = "heart"; el.textContent = "💗";
+  el.style.left = x + "px"; el.style.top = y + "px"; el.style.fontSize = rand(24, 36) + "px";
+  tank.appendChild(el); setTimeout(()=> el.remove(), 1150);
+}
+function sparks(x, y, n){
+  for(let i = 0; i < n; i++){
+    const el = document.createElement("div");
+    el.className = "spark"; el.textContent = "✨";
+    el.style.left = x + "px"; el.style.top = y + "px"; el.style.fontSize = rand(18, 30) + "px";
+    const ang = (i / n) * 6.283 + rand(-.3, .3), d = rand(46, 92);
+    el.style.setProperty("--dx", Math.cos(ang)*d + "px");
+    el.style.setProperty("--dy", Math.sin(ang)*d + "px");
+    tank.appendChild(el); setTimeout(()=> el.remove(), 850);
+  }
+}
+
+/* ---------- チョコちゃんのセリフ ---------- */
+const EAT_LINES = ["おいしそう！ 😋", "ぱくぱく たべてるね", "おさかなさん うれしそう 🐠", "いっぱい たべてね", "げんきに およいでるね"];
+const IDLE_LINES = ["おさかなさん およいでるね 🐠", "みずの なかは きもちよさそう", "カメさん ゆっくりだね 🐢", "タップすると ごはんが おちるよ"];
+let bubbleTimer = null;
+function say(text, holdMs){
+  bubble.textContent = text;
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(()=>{ bubble.textContent = IDLE_LINES[Math.floor(Math.random()*IDLE_LINES.length)]; }, holdMs || 3400);
+}
+
+/* ---------- お祝い ---------- */
+const MILESTONES = [30, 60, 100, 150, 200, 300, 400, 500];
+function checkMilestone(){
+  if(MILESTONES.includes(eaten)){
+    announceEl.querySelector(".big").textContent = `🎉 ${eaten} こ たべたよ！`;
+    announceEl.querySelector(".sub").textContent = "おさかなさん 大よろこび！";
+    announceEl.classList.add("show");
+    fanfare();
+    fishes.forEach(f => { heart(f.x, f.y - 10); });
+    sparks(W()/2, H()/2, 22);
+    say("すごい！ いっぱい たべたね 🎉", 4200);
+    setTimeout(()=> announceEl.classList.remove("show"), 3000);
+  }
+}
+
+/* ---------- メインループ ---------- */
+let lastT = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  const sandTop = H() - SAND_H();
+
+  /* ごはん：沈む→砂に着地→しばらく残る */
+  for(const fd of foods){
+    if(fd.dead) continue;
+    if(fd.y < sandTop - 12){
+      fd.y += fd.vy * dt; fd.sway += dt * 2;
+      fd.x += Math.sin(fd.sway) * 8 * dt;
+    } else {
+      fd.landed += dt;
+      if(fd.landed > 14){ fd.dead = true; fd.el.style.opacity = "0"; fd.el.remove(); }
+    }
+    fd.el.style.transform = `translate(${fd.x - 7}px, ${fd.y - 7}px)`;
+  }
+
+  /* 魚：ごはんがあれば一番近い子が向かう */
+  for(const f of fishes){
+    let tgt = null, best = 1e9;
+    for(const fd of foods){
+      if(fd.dead) continue;
+      const d = (fd.x - f.x) ** 2 + (fd.y - f.y) ** 2;
+      if(d < best){ best = d; tgt = fd; }
+    }
+    let gx, gy, spd;
+    if(tgt){ gx = tgt.x; gy = tgt.y; spd = f.chase; }
+    else {
+      if(Math.hypot(f.tx - f.x, f.ty - f.y) < 24 || Math.random() < 0.002){
+        f.tx = rand(W()*0.06, W()*0.94);
+        f.ty = rand(H()*0.2, sandTop - 60);
+      }
+      gx = f.tx; gy = f.ty; spd = f.speed;
+    }
+    const dx = gx - f.x, dy = gy - f.y, dist = Math.hypot(dx, dy) || 1;
+    const step = Math.min(dist, spd * dt);
+    f.x += dx / dist * step; f.y += dy / dist * step * 0.8;
+    if(Math.abs(dx) > 6) f.dir = dx > 0 ? 1 : -1;
+    f.phase += dt * 3;
+    const bob = Math.sin(f.phase) * 3;
+    /* 絵文字の魚は左向きがデフォルト：右へ泳ぐ時は反転 */
+    f.el.style.transform = `translate(${f.x - f.size/2}px, ${f.y - f.size/2 + bob}px) scaleX(${-f.dir})`;
+    /* 食べる */
+    if(tgt && dist < f.size * 0.42){
+      tgt.dead = true; tgt.el.remove();
+      eaten++; countNum.textContent = eaten;
+      localStorage.setItem("suisou_eaten", String(eaten));
+      munch(); heart(f.x, f.y - f.size * 0.4);
+      f.el.classList.remove("happy"); void f.el.offsetWidth; f.el.classList.add("happy");
+      if(Math.random() < 0.4) say(EAT_LINES[Math.floor(Math.random()*EAT_LINES.length)]);
+      checkMilestone();
+    }
+    if(Math.random() < 0.0012) bubbleP(f.x + f.dir * f.size * 0.3, f.y - 6);
+  }
+
+  /* カニ：砂底を端から端へ */
+  crab.x += crab.dir * 14 * dt;
+  if(crab.x > W() - 60) crab.dir = -1;
+  if(crab.x < 20) crab.dir = 1;
+  crabEl.style.transform = `translate(${crab.x}px, ${sandTop - 26}px) scaleX(${crab.dir})`;
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- タップ ---------- */
+tank.addEventListener("pointerdown", (e)=>{
+  ac(); bgmStart();
+  const x = e.clientX, y = e.clientY;
+  taps++;
+  if(taps === 3) hint.style.opacity = "0";
+  /* 魚を直接タップしたら、その子が喜ぶ */
+  for(const f of fishes){
+    if(Math.hypot(f.x - x, f.y - y) < f.size * 0.62){
+      f.el.classList.remove("spin"); void f.el.offsetWidth; f.el.classList.add("spin");
+      heart(f.x, f.y - f.size * 0.5); happy();
+      say("こんにちは！ 🐠", 2400);
+      return;
+    }
+  }
+  ripple(x, y); plop();
+  dropFood(x, Math.min(y, H() - SAND_H() - 30));
+  bubbleP(x, y, true);
+});
+
+/* 環境の泡 */
+setInterval(()=>{ if(Math.random() < 0.75) bubbleP(rand(W()*0.05, W()*0.95), H() - SAND_H() - 4); }, 900);
+
+/* 入口フェードイン（ふわーっと水槽に入る） */
+requestAnimationFrame(()=>{ setTimeout(()=>{ veil.style.transition = "opacity 1.9s ease"; veil.style.opacity = "0"; }, 60); });
+
+/* テスト・保守用フック */
+window.__suisou = {
+  get eaten(){ return eaten; },
+  get foodCount(){ return foods.filter(f => !f.dead).length; },
+  get fishCount(){ return fishes.length; },
+  feed(x, y){ dropFood(x, y); },
+  fishPos(){ return fishes.map(f => ({ x: Math.round(f.x), y: Math.round(f.y) })); },
+};
+</script>
+
+<!-- 埋め込み（時計の窓の中）対応: 見た目はそのまま、戻るリンクの挙動だけ合図に変える -->
+<style>html.embedded #fsBtn{ display:none !important; }</style>
+<script>
+if (window.self !== window.top) {
+  document.documentElement.classList.add("embedded");
+  document.addEventListener("click", function(e){
+    var a = e.target.closest && e.target.closest('a[href="index.html"]');
+    if (a) { e.preventDefault(); parent.postMessage("closeGame", "*"); }
+  });
+}
+</script>
+</body>
+</html>

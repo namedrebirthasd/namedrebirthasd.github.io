@@ -321,15 +321,24 @@ const GRID = [
    正解は「名前のどれかに対象かなを含む絵」ちょうど1枚を生成側で保証する */
 const ITEMS = [
   {emoji:"🍬",names:["あめ"]},{emoji:"🐶",names:["いぬ"]},{emoji:"🐮",names:["うし"]},{emoji:"🐰",names:["うさぎ"]},{emoji:"🦐",names:["えび"]},{emoji:"🍪",names:["おかし","くっきー"]},
+  {emoji:"🦆",names:["あひる"]},{emoji:"🍓",names:["いちご"]},{emoji:"🪑",names:["いす"]},{emoji:"✏️",names:["えんぴつ"]},{emoji:"🍙",names:["おにぎり"]},{emoji:"🍵",names:["おちゃ"]},
   {emoji:"🐢",names:["かめ"]},{emoji:"🌳",names:["き"]},{emoji:"☁️",names:["くも"]},{emoji:"🍰",names:["けーき"]},{emoji:"🍚",names:["こめ"]},
+  {emoji:"🦀",names:["かに"]},{emoji:"🎃",names:["かぼちゃ"]},{emoji:"🦊",names:["きつね"]},{emoji:"🍄",names:["きのこ"]},{emoji:"🐻",names:["くま"]},{emoji:"🧶",names:["けいと"]},{emoji:"🎏",names:["こいのぼり"]},
   {emoji:"🐵",names:["さる"]},{emoji:"🦌",names:["しか"]},{emoji:"🍣",names:["すし"]},{emoji:"🧼",names:["せっけん"]},{emoji:"🍦",names:["そふとくりーむ"]},
-  {emoji:"🥚",names:["たまご"]},{emoji:"🗺️",names:["ちず","まっぷ"]},{emoji:"🌙",names:["つき"]},{emoji:"✉️",names:["てがみ","めーる"]},{emoji:"🕐",names:["とけい"]},
+  {emoji:"🐟",names:["さかな"]},{emoji:"🍒",names:["さくらんぼ"]},{emoji:"📰",names:["しんぶん"]},{emoji:"🍉",names:["すいか"]},{emoji:"🍘",names:["せんべい"]},{emoji:"🧦",names:["そっくす"]},
+  {emoji:"🥚",names:["たまご"]},{emoji:"🗺️",names:["ちず","まっぷ"]},{emoji:"🌙",names:["つき"]},{emoji:"✉️",names:["てがみ"]},{emoji:"🕐",names:["とけい"]},
+  {emoji:"🐙",names:["たこ"]},{emoji:"🎋",names:["たなばた"]},{emoji:"🧀",names:["ちーず"]},{emoji:"🎣",names:["つり"]},{emoji:"📺",names:["てれび"]},{emoji:"🧤",names:["てぶくろ"]},{emoji:"🍅",names:["とまと"]},{emoji:"🚪",names:["とびら"]},
   {emoji:"🍐",names:["なし"]},{emoji:"🌈",names:["にじ"]},{emoji:"🧸",names:["ぬいぐるみ"]},{emoji:"🐱",names:["ねこ"]},{emoji:"📓",names:["のーと"]},
+  {emoji:"🍆",names:["なす"]},{emoji:"🌊",names:["なみ"]},{emoji:"🥕",names:["にんじん"]},{emoji:"🖌️",names:["ぬりえ"]},{emoji:"🐭",names:["ねずみ"]},{emoji:"🚗",names:["のりもの"]},
   {emoji:"🌸",names:["はな"]},{emoji:"🌻",names:["ひまわり"]},{emoji:"🚢",names:["ふね"]},{emoji:"🐍",names:["へび"]},{emoji:"⭐",names:["ほし"]},
+  {emoji:"🕊️",names:["はと"]},{emoji:"🦷",names:["は"]},{emoji:"🐑",names:["ひつじ"]},{emoji:"✈️",names:["ひこうき"]},{emoji:"🎈",names:["ふうせん"]},{emoji:"📖",names:["ほん"]},{emoji:"🔥",names:["ほのお"]},
   {emoji:"🫘",names:["まめ"]},{emoji:"🍊",names:["みかん"]},{emoji:"🐛",names:["むし"]},{emoji:"👓",names:["めがね"]},{emoji:"🍑",names:["もも"]},
+  {emoji:"🪟",names:["まど"]},{emoji:"🍯",names:["はちみつ"]},{emoji:"🟣",names:["むらさき"]},{emoji:"🍈",names:["めろん"]},
   {emoji:"⛰️",names:["やま"]},{emoji:"⛄",names:["ゆき"]},{emoji:"🌃",names:["よる"]},
+  {emoji:"🐐",names:["やぎ"]},{emoji:"💍",names:["ゆびわ"]},{emoji:"♨️",names:["ゆ"]},{emoji:"🧚",names:["ようせい"]},
   {emoji:"🦁",names:["らいおん"]},{emoji:"🍎",names:["りんご"]},{emoji:"💎",names:["るびー"]},{emoji:"🍋",names:["れもん"]},{emoji:"🕯️",names:["ろうそく"]},
-  {emoji:"🐊",names:["わに"]}
+  {emoji:"🍜",names:["らーめん"]},{emoji:"🎀",names:["りぼん"]},{emoji:"🐿️",names:["りす"]},{emoji:"🧱",names:["れんが"]},{emoji:"🤖",names:["ろぼっと"]},
+  {emoji:"🐊",names:["わに"]},{emoji:"🍭",names:["わたあめ"]}
 ];
 function nameMatches(it, kana){ return it.names.some(n => n.includes(kana)); }
 /* ゐ・ゑ・を は読み方クイズ（選択肢に対象の字そのものは入れない：押して×になる罠を避ける） */

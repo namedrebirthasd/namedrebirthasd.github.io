@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>まちがいさがし</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    background:linear-gradient(#e8f7ff 0%, #d4efff 60%, #c2e4ff 100%);
+  }
+  /* 上部バー */
+  #topbar{ position:fixed; top:0; left:0; right:0; z-index:30; display:flex; align-items:flex-start; gap:8px; padding:10px; pointer-events:none; }
+  .tbtn{ pointer-events:auto; cursor:pointer; font-family:inherit; font-size:19px; font-weight:bold; color:#20506e;
+    background:#eaf6ff; border:3px solid #5b9bd0; border-radius:999px; padding:10px 18px; box-shadow:0 3px 0 rgba(20,60,100,.35); }
+  .tbtn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(20,60,100,.35); }
+  #counter{ margin:0 auto; background:rgba(255,252,240,.96); border:4px solid #e88bb0; border-radius:999px;
+    padding:8px 26px; font-size:clamp(22px,4.2vw,36px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
+
+  /* 2枚の絵 */
+  #stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; gap:2.5vw; padding:92px 2vw 108px; }
+  .panel{ position:relative; flex:1; max-width:640px; height:100%; max-height:600px; border-radius:26px; overflow:hidden;
+    border:6px solid #fff; box-shadow:0 8px 24px rgba(30,80,130,.3); cursor:pointer; }
+  .obj{ position:absolute; transform:translate(-50%,-50%); line-height:1; pointer-events:none;
+    font-size:clamp(44px,7.5vw,76px); filter:drop-shadow(0 3px 3px rgba(0,0,0,.2)); }
+  .ring{ position:absolute; transform:translate(-50%,-50%); width:clamp(74px,12vw,118px); height:clamp(74px,12vw,118px);
+    border:7px solid #ff5b8a; border-radius:50%; pointer-events:none; z-index:5;
+    box-shadow:0 0 0 4px rgba(255,255,255,.75), 0 0 22px rgba(255,91,138,.55); animation:ringPop .45s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes ringPop{ 0%{ scale:.4; opacity:0;} 100%{ scale:1; opacity:1;} }
+  .hintPulse{ position:absolute; transform:translate(-50%,-50%); width:clamp(74px,12vw,118px); height:clamp(74px,12vw,118px);
+    border:6px dashed rgba(255,150,30,.95); border-radius:50%; pointer-events:none; z-index:4; animation:hintBlink 1.1s ease-in-out infinite; }
+  @keyframes hintBlink{ 0%,100%{ opacity:.15;} 50%{ opacity:.95;} }
+  .tapRip{ position:absolute; transform:translate(-50%,-50%); width:52px; height:52px; border:4px solid rgba(90,160,220,.8);
+    border-radius:50%; pointer-events:none; z-index:5; animation:ripA .5s ease-out forwards; }
+  @keyframes ripA{ from{ scale:.4; opacity:.9;} to{ scale:1.5; opacity:0;} }
+  .spark{ position:fixed; z-index:46; pointer-events:none; animation:sparkFly .8s ease-out forwards; }
+  @keyframes sparkFly{ from{ transform:translate(-50%,-50%) scale(1); opacity:1;} to{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity:0;} }
+
+  /* チョコちゃん */
+  #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(84px,14vw,128px); pointer-events:none; }
+  #choco img{ width:100%; display:block; }
+  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(84px,14vw,128px) + 6px); z-index:20; max-width:min(46vw,360px);
+    background:#fff; border:4px solid #f0b429; border-radius:20px; padding:10px 16px;
+    font-size:clamp(18px,3vw,25px); font-weight:bold; color:#5a4512; box-shadow:0 4px 0 rgba(140,90,20,.3); }
+  #bubble:after{ content:""; position:absolute; left:40px; bottom:-16px; border:8px solid transparent; border-top:10px solid #f0b429; }
+
+  #announce{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:none; opacity:0; transition:opacity .45s ease; text-align:center; padding:20px; }
+  #announce.show{ opacity:1; }
+  #announce .big{ font-size:clamp(46px,9vw,96px); font-weight:bold; color:#fff;
+    text-shadow:0 4px 0 rgba(160,50,90,.55), 0 0 34px rgba(255,120,170,.8); line-height:1.3; }
+  #announce .sub{ margin-top:12px; font-size:clamp(24px,4.6vw,40px); font-weight:bold; color:#fff; text-shadow:0 3px 0 rgba(90,60,20,.5); }
+  #fadeVeil{ position:fixed; inset:0; z-index:35; background:#fff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
+
+  /* 下部 */
+  #bottombar{ position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center; padding:12px; pointer-events:none; }
+  a.backbtn{ pointer-events:auto; text-decoration:none; font-size:clamp(22px,4vw,30px); font-weight:bold; color:#20506e;
+    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:14px 34px; box-shadow:0 5px 0 rgba(40,90,130,.35); }
+  a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,.35); }
+  @media (max-aspect-ratio: 3/4){
+    #stage{ flex-direction:column; gap:2vh; padding-top:86px; }
+    .panel{ width:100%; max-height:none; }
+    #bubble{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <button class="tbtn" id="bgmBtn">🎵 おんがく オン</button>
+  <button class="tbtn" id="seBtn">🔔 おと オン</button>
+  <div id="counter">みつけた ⭐ <span id="foundNum">0</span> / 3</div>
+  <button class="tbtn" id="fsBtn">⛶ ぜんがめん</button>
+</div>
+
+<div id="stage">
+  <div class="panel" id="panelL"></div>
+  <div class="panel" id="panelR"></div>
+</div>
+
+<div id="bubble">2まいの 絵を くらべて<br>ちがう所を タップしてね 🔍</div>
+<div id="choco"><img src="character.png" alt="" onerror="this.parentNode.style.display='none'"></div>
+
+<div id="fadeVeil" style="opacity:1"></div>
+<div id="announce"><div class="big"></div><div class="sub"></div></div>
+
+<div id="bottombar"><a class="backbtn" href="index.html">🕐 とけいに もどる</a></div>
+
+<script>
+"use strict";
+/* ============================================================
+   まちがいさがし v1.0（老人向け・負けなし）
+   左右2枚の絵の違いは3つ。タップで当てるだけ。
+   間違えても罰なし。45秒 手が止まったら ヒントが点滅する。
+   絵は絵文字の配置で自動生成（問題は無限）。
+   ============================================================ */
+const THEMES = [
+  { name:"にわ", bg:"linear-gradient(#aee3ff 0%, #d8f3ff 40%, #9ed98a 41%, #6fb85c 100%)",
+    pool:["🌷","🌻","🦋","🐝","🌳","🍎","🐞","🐱","☀️","🌈"] },
+  { name:"うみ", bg:"linear-gradient(#3f9fd8 0%, #2f83c4 55%, #e8d193 56%, #d9bd7a 100%)",
+    pool:["🐠","🐢","🦀","🐚","⭐","🐙","🦐","⛵","🐳","🪸"] },
+  { name:"もり", bg:"linear-gradient(#bfe8c9 0%, #e6f7d9 38%, #8fce7e 39%, #5da84e 100%)",
+    pool:["🌲","🍄","🦊","🐿️","🦉","🍂","🐻","🦌","🍓","🐦"] },
+  { name:"おへや", bg:"linear-gradient(#ffe9f2 0%, #fff6e8 55%, #f3d9b8 56%, #e5c491 100%)",
+    pool:["🪴","🕐","📚","🧸","🛋️","🍰","☕","🐈","🖼️","💡"] },
+];
+/* 配置スロット（%座標・7か所） */
+const SLOTS = [
+  { x:22, y:24 }, { x:52, y:18 }, { x:80, y:26 },
+  { x:34, y:52 }, { x:68, y:50 },
+  { x:24, y:80 }, { x:56, y:78 }, { x:82, y:76 },
+];
+const DIFF_COUNT = 3;
+const rand = (a,b) => a + Math.random()*(b-a);
+function shuffle(arr){ const a = [...arr]; for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- 音 ---------- */
+let AC = null;
+let bgmOn = localStorage.getItem("machigai_bgm") !== "0";
+let seOn  = localStorage.getItem("machigai_se")  !== "0";
+function ac(){ if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if(AC.state === "suspended") AC.resume(); return AC; }
+function tone(freq, t0, dur, type, vol){
+  const a = ac(), o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function seGood(){ if(!seOn) return; const t = ac().currentTime; [659,784,1047].forEach((f,i)=> tone(f, t + i*0.09, 0.3, "triangle", 0.18)); }
+function seSoft(){ if(!seOn) return; tone(392, ac().currentTime, 0.16, "sine", 0.08); }
+function seClear(){ if(!seOn) return; const t = ac().currentTime; [523,659,784,1047,784,1047,1319].forEach((f,i)=> tone(f, t + i*0.12, 0.34, "triangle", 0.18)); }
+const PENTA = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3];
+let bgmTimer = null, bgmStep = 0;
+function bgmTick(){
+  if(!bgmOn) return;
+  const t = ac().currentTime + 0.05;
+  const f = PENTA[[0,4,2,5,4,7,5,2][bgmStep % 8]];
+  tone(f, t, 1.3, "sine", 0.045); tone(f * 2, t, 0.8, "sine", 0.016);
+  if(bgmStep % 4 === 0) tone(130.8, t, 2.4, "sine", 0.036);
+  bgmStep++; bgmTimer = setTimeout(bgmTick, 1120);
+}
+function bgmStart(){ if(bgmTimer || !bgmOn) return; bgmTick(); }
+function bgmStop(){ clearTimeout(bgmTimer); bgmTimer = null; }
+const bgmBtn = document.getElementById("bgmBtn"), seBtn = document.getElementById("seBtn");
+function syncBtns(){ bgmBtn.textContent = bgmOn ? "🎵 おんがく オン" : "🎵 おんがく オフ"; seBtn.textContent = seOn ? "🔔 おと オン" : "🔔 おと オフ"; }
+bgmBtn.addEventListener("click", ()=>{ bgmOn = !bgmOn; localStorage.setItem("machigai_bgm", bgmOn ? "1" : "0"); syncBtns(); if(bgmOn){ ac(); bgmStart(); } else bgmStop(); });
+seBtn.addEventListener("click", ()=>{ seOn = !seOn; localStorage.setItem("machigai_se", seOn ? "1" : "0"); syncBtns(); if(seOn) seSoft(); });
+syncBtns();
+const fsBtn = document.getElementById("fsBtn");
+function syncFsLabel(){ fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん"; }
+fsBtn.addEventListener("click", ()=>{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else document.documentElement.requestFullscreen().catch(()=>{}); });
+document.addEventListener("fullscreenchange", syncFsLabel);
+
+/* ---------- ゲーム本体 ---------- */
+const panelL = document.getElementById("panelL"), panelR = document.getElementById("panelR");
+const foundNum = document.getElementById("foundNum");
+const bubble = document.getElementById("bubble");
+const announceEl = document.getElementById("announce");
+let cleared = parseInt(localStorage.getItem("machigai_cleared") || "0", 10) || 0;
+let round = null;       // { theme, left:[{slot,emo}], diffs:[{slot, kind}] , found:Set }
+let lastAction = Date.now();
+let bubbleTimer = null;
+function say(text, holdMs){
+  bubble.innerHTML = text;
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(()=>{ bubble.innerHTML = "ちがう所は あと " + (DIFF_COUNT - round.found.size) + " つ 🔍"; }, holdMs || 3200);
+}
+function sparks(x, y, n){
+  for(let i = 0; i < n; i++){
+    const el = document.createElement("div");
+    el.className = "spark"; el.textContent = i % 2 ? "⭐" : "✨";
+    el.style.left = x + "px"; el.style.top = y + "px"; el.style.fontSize = (20 + Math.random()*16) + "px";
+    const ang = (i / n) * 6.283, d = 55 + Math.random()*65;
+    el.style.setProperty("--dx", Math.cos(ang)*d + "px");
+    el.style.setProperty("--dy", Math.sin(ang)*d + "px");
+    document.body.appendChild(el); setTimeout(()=> el.remove(), 850);
+  }
+}
+function newRound(){
+  const theme = THEMES[Math.floor(Math.random()*THEMES.length)];
+  const slotIdx = shuffle(SLOTS.map((_, i) => i)).slice(0, 7);
+  const emos = shuffle(theme.pool).slice(0, 7);
+  const left = slotIdx.map((s, i) => ({ slot: s, emo: emos[i] }));
+  const diffSlots = shuffle(slotIdx).slice(0, DIFF_COUNT);
+  const usedEmos = new Set(emos);
+  const spare = theme.pool.filter(e => !usedEmos.has(e));
+  const diffs = diffSlots.map((s, i) => {
+    const kind = (i % 2 === 0) ? "swap" : "remove";
+    return { slot: s, kind, to: kind === "swap" ? spare[i % spare.length] : null };
+  });
+  round = { theme, left, diffs, found: new Set() };
+  foundNum.textContent = "0";
+  render();
+  say("ちがう所は 3つ あるよ 🔍", 3600);
+  lastAction = Date.now();
+}
+function render(){
+  for(const [panel, isRight] of [[panelL, false], [panelR, true]]){
+    panel.style.background = round.theme.bg;
+    panel.innerHTML = "";
+    for(const item of round.left){
+      const d = round.diffs.find(dd => dd.slot === item.slot);
+      if(isRight && d){
+        if(d.kind === "remove") continue;
+        placeObj(panel, item.slot, d.to);
+      } else {
+        placeObj(panel, item.slot, item.emo);
+      }
+    }
+    for(const d of round.diffs){
+      if(round.found.has(d.slot)){
+        const s = SLOTS[d.slot];
+        const r = document.createElement("div");
+        r.className = "ring"; r.style.left = s.x + "%"; r.style.top = s.y + "%";
+        panel.appendChild(r);
+      }
+    }
+  }
+}
+function placeObj(panel, slot, emo){
+  const s = SLOTS[slot];
+  const el = document.createElement("div");
+  el.className = "obj"; el.textContent = emo;
+  el.style.left = s.x + "%"; el.style.top = s.y + "%";
+  panel.appendChild(el);
+}
+function judgeTap(panel, clientX, clientY){
+  ac(); bgmStart();
+  lastAction = Date.now();
+  clearHints();
+  const rect = panel.getBoundingClientRect();
+  const px = (clientX - rect.left) / rect.width * 100;
+  const py = (clientY - rect.top) / rect.height * 100;
+  /* 一番近いスロットを探す（半径14%以内なら当たり判定） */
+  let best = -1, bestD = 1e9;
+  SLOTS.forEach((s, i) => {
+    const d = Math.hypot(s.x - px, s.y - py);
+    if(d < bestD){ bestD = d; best = i; }
+  });
+  const rip = document.createElement("div");
+  rip.className = "tapRip"; rip.style.left = px + "%"; rip.style.top = py + "%";
+  panel.appendChild(rip); setTimeout(()=> rip.remove(), 550);
+  if(bestD > 15) { seSoft(); return; }
+  const diff = round.diffs.find(d => d.slot === best);
+  if(diff && !round.found.has(best)){
+    round.found.add(best);
+    foundNum.textContent = String(round.found.size);
+    seGood();
+    render();
+    const s = SLOTS[best];
+    const rr = panel.getBoundingClientRect();
+    sparks(rr.left + rr.width * s.x / 100, rr.top + rr.height * s.y / 100, 8);
+    if(round.found.size >= DIFF_COUNT){
+      cleared++;
+      localStorage.setItem("machigai_cleared", String(cleared));
+      seClear();
+      announceEl.querySelector(".big").textContent = "🎉 ぜんぶ みつけた！";
+      announceEl.querySelector(".sub").textContent = "すごい！ つぎの 絵に いくよ";
+      announceEl.classList.add("show");
+      say("やったね！ ぜんぶ 見つけた 🎉", 3000);
+      setTimeout(()=>{ announceEl.classList.remove("show"); newRound(); }, 3400);
+    } else {
+      say("みつけた！ ⭐ あと " + (DIFF_COUNT - round.found.size) + " つ", 2600);
+    }
+  } else if(diff && round.found.has(best)){
+    seSoft();
+  } else {
+    seSoft();
+    if(Math.random() < 0.5) say("そこは 同じみたい 🔍", 2200);
+  }
+}
+panelL.addEventListener("pointerdown", (e)=> judgeTap(panelL, e.clientX, e.clientY));
+panelR.addEventListener("pointerdown", (e)=> judgeTap(panelR, e.clientX, e.clientY));
+
+/* ヒント：45秒 手が止まったら、未発見の違いが1つ点滅する */
+let hintEls = [];
+function clearHints(){ hintEls.forEach(el => el.remove()); hintEls = []; }
+setInterval(()=>{
+  if(!round || round.found.size >= DIFF_COUNT) return;
+  if(Date.now() - lastAction < 45000 || hintEls.length) return;
+  const rest = round.diffs.filter(d => !round.found.has(d.slot));
+  if(!rest.length) return;
+  const d = rest[0], s = SLOTS[d.slot];
+  for(const panel of [panelL, panelR]){
+    const el = document.createElement("div");
+    el.className = "hintPulse"; el.style.left = s.x + "%"; el.style.top = s.y + "%";
+    panel.appendChild(el); hintEls.push(el);
+  }
+  say("ヒント： てんめつ している所を 見てね 💡", 4000);
+}, 3000);
+
+newRound();
+document.addEventListener("pointerdown", ()=>{ ac(); bgmStart(); }, { once:true });
+
+/* 入口フェードイン */
+requestAnimationFrame(()=>{ setTimeout(()=>{ const v = document.getElementById("fadeVeil"); v.style.transition = "opacity 1.6s ease"; v.style.opacity = "0"; }, 60); });
+
+/* テスト・保守用フック */
+window.__machigai = {
+  get found(){ return round ? round.found.size : 0; },
+  get cleared(){ return cleared; },
+  diffSlots(){ return round ? round.diffs.map(d => d.slot) : []; },
+  slotPos(i){ return SLOTS[i]; },
+  tapSlot(i, right){
+    const panel = right ? panelR : panelL;
+    const rect = panel.getBoundingClientRect();
+    const s = SLOTS[i];
+    judgeTap(panel, rect.left + rect.width * s.x / 100, rect.top + rect.height * s.y / 100);
+  },
+  panelRect(right){ const r = (right ? panelR : panelL).getBoundingClientRect(); return { left:r.left, top:r.top, width:r.width, height:r.height }; },
+};
+</script>
+
+<!-- 埋め込み（時計の窓の中）対応: 見た目はそのまま、戻るリンクの挙動だけ合図に変える -->
+<style>html.embedded #fsBtn{ display:none !important; }</style>
+<script>
+if (window.self !== window.top) {
+  document.documentElement.classList.add("embedded");
+  document.addEventListener("click", function(e){
+    var a = e.target.closest && e.target.closest('a[href="index.html"]');
+    if (a) { e.preventDefault(); parent.postMessage("closeGame", "*"); }
+  });
+}
+</script>
+</body>
+</html>

@@ -57,7 +57,7 @@
   .spark{ position:absolute; z-index:9; pointer-events:none; animation:sparkFly .8s ease-out forwards; }
   @keyframes sparkFly{ from{ transform:translate(-50%,-50%) scale(1); opacity:1;} to{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity:0;} }
 
-  /* チョコちゃん */
+  /* ナビちゃん */
   #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(96px,17vw,150px); pointer-events:none; }
   #choco img{ width:100%; display:block; }
   #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(96px,17vw,150px) + 6px); z-index:20; max-width:min(62vw,430px);
@@ -281,7 +281,7 @@ function sparks(x, y, n){
   }
 }
 
-/* ---------- チョコちゃんのセリフ ---------- */
+/* ---------- ナビちゃんのセリフ ---------- */
 const EAT_LINES = ["おいしそう！ 😋", "ぱくぱく たべてるね", "おさかなさん うれしそう 🐠", "いっぱい たべてね", "げんきに およいでるね"];
 const IDLE_LINES = ["おさかなさん およいでるね 🐠", "みずの なかは きもちよさそう", "カメさん ゆっくりだね 🐢", "タップすると ごはんが おちるよ"];
 let bubbleTimer = null;

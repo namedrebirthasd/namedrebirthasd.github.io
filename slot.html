@@ -63,6 +63,9 @@
   .reel.win{ border-color:#ff7847; background:#fff0e2; animation:winPulse 0.4s ease-in-out 4; }
   @keyframes winPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,150,40,0); } 50%{ box-shadow:0 0 26px 8px rgba(255,150,40,0.85); } }
   .sym{ font-size:clamp(58px, 9.5vw, 112px); line-height:1.15; }
+  /* パチスロ本物の絵柄：セブン（赤い大きな7）と BAR（黒いプレート） */
+  .sym.seven{ color:#e60012; font-weight:900; text-shadow:0 3px 0 #ffd23e, 0 6px 14px rgba(230,0,18,.35); }
+  .sym.bar{ background:#16161c; color:#fff; font-weight:900; letter-spacing:.06em; border-radius:14px; padding:.06em .22em; font-size:clamp(30px, 4.6vw, 54px); box-shadow:inset 0 0 0 3px #f5f0dc, 0 4px 10px rgba(0,0,0,.3); }
   .symname{ font-size:clamp(17px, 2.3vw, 27px); font-weight:bold; color:#7a4a16; }
   /* リールの真下のボタン（筐体の一部） */
   #spinBtn{
@@ -178,6 +181,8 @@ const CONFIG = {
   coinTwo:   3,         // 2つ揃いのコイン
   coinThree: 10,        // 3つ揃いのコイン
   coinThreeStar: 30,    // ⭐3つ揃いのコイン
+  coinBar:   20,        // BAR3つ揃いのコイン
+  coinSeven: 77,        // 777（セブン3つ揃い）のコイン＝大当たり
   cycleMs:   80,        // リールが切り替わる速さ
   stopAt:    [950, 1500, 2050],  // 各リールが止まる時刻(ms)
   seMul:     2.0,       // SEの音量倍率（難聴対応で約2倍）
@@ -187,8 +192,16 @@ const CONFIG = {
 };
 const SYMBOLS = [
   { e:"🍓", n:"いちご" }, { e:"🍊", n:"みかん" }, { e:"🍇", n:"ぶどう" },
-  { e:"🍒", n:"さくらんぼ" }, { e:"🍑", n:"もも" }, { e:"⭐", n:"ほし" }
+  { e:"🍒", n:"さくらんぼ" }, { e:"🍑", n:"もも" }, { e:"⭐", n:"ほし" },
+  { e:"7", n:"セブン", cls:"seven" }, { e:"BAR", n:"バー", cls:"bar" }
 ];
+/* 3つ揃いの時の絵柄の重み（合計100）。セブンは低め＝出たら本物の大当たり */
+const TRIPLE_W = [16, 16, 16, 16, 16, 8, 4, 8];
+function pickTripleSymbol(){
+  let r = Math.random() * 100, acc = 0;
+  for(let i = 0; i < TRIPLE_W.length; i++){ acc += TRIPLE_W[i]; if(r < acc) return i; }
+  return 0;
+}
 const MISS_LINES = ["おしい！ あと すこし！", "つぎは あたるかも！", "もう いっかい まわして みてね"];
 
 /* ランプ列（筐体の電飾） */
@@ -261,7 +274,7 @@ let spinning = false, forceNext = null;
 winCountEl.textContent = SAVE.wins;
 coinCountEl.textContent = SAVE.coins;
 
-function setReel(i, s){ reels[i].sym.textContent = s.e; reels[i].name.textContent = s.n; }
+function setReel(i, s){ reels[i].sym.textContent = s.e; reels[i].sym.className = "sym" + (s.cls ? " " + s.cls : ""); reels[i].name.textContent = s.n; }
 function say(html){ bubble.innerHTML = html; }
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
@@ -269,7 +282,7 @@ function decideResult(){
   if(forceNext){ const f = forceNext; forceNext = null; return f; }
   const r = Math.random();
   if(r < CONFIG.probThree){
-    const s = Math.floor(Math.random()*SYMBOLS.length);
+    const s = pickTripleSymbol();
     return [s,s,s];
   }
   if(r < CONFIG.probThree + CONFIG.probTwo){
@@ -351,12 +364,23 @@ function finish(result){
   if(maxSame===3){
     SAVE.wins++;
     reels.forEach(r=>r.root.classList.add("win"));
-    const star = result[0]===5;
-    const gain = star ? CONFIG.coinThreeStar : CONFIG.coinThree;
-    say("すごい！ ぜんぶ そろったよ！🎉<br>コイン +" + gain + " まい！");
-    SE.three(); starBurst(CONFIG.starsThree);
+    const idx = result[0];
+    const star = idx===5, seven = idx===6, bar = idx===7;
+    const gain = seven ? CONFIG.coinSeven : star ? CONFIG.coinThreeStar : bar ? CONFIG.coinBar : CONFIG.coinThree;
+    if(seven){
+      say("🎉 777！ だいあたり！！ 🎉<br>コイン +" + gain + " まい！ すごい！");
+      SE.three(); starBurst(CONFIG.starsThree * 2);
+      celebrate(3800);
+    } else if(bar){
+      say("バー が そろった！ すごい！🎉<br>コイン +" + gain + " まい！");
+      SE.three(); starBurst(CONFIG.starsThree);
+      celebrate(2400);
+    } else {
+      say("すごい！ ぜんぶ そろったよ！🎉<br>コイン +" + gain + " まい！");
+      SE.three(); starBurst(CONFIG.starsThree);
+      celebrate(2400);
+    }
     flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
-    celebrate(2400);
     mascot.classList.add("jump");
     addCoins(gain);
   } else if(maxSame===2){
@@ -421,6 +445,8 @@ window.__slot = {
   },
   forceThree(){ forceNext = [0,0,0]; },
   forceThreeStar(){ forceNext = [5,5,5]; },
+  forceSeven(){ forceNext = [6,6,6]; },
+  forceBar(){ forceNext = [7,7,7]; },
   forceTwo(){ forceNext = [1,1,2]; },
   forceMiss(){ forceNext = [0,1,2]; }
 };

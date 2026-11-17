@@ -21,7 +21,8 @@
     padding:8px 26px; font-size:clamp(22px,4.2vw,36px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
 
   /* 2枚の絵 */
-  #stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; gap:2.5vw; padding:92px 2vw 108px; }
+  /* 左にチョコちゃん専用の余白を確保し、吹き出しが絵に一切重ならないようにする */
+  #stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; gap:2.5vw; padding:92px 2vw 108px 208px; }
   .panel{ position:relative; flex:1; max-width:640px; height:100%; max-height:600px; border-radius:26px; overflow:hidden;
     border:6px solid #fff; box-shadow:0 8px 24px rgba(30,80,130,.3); cursor:pointer; }
   .obj{ position:absolute; transform:translate(-50%,-50%); line-height:1; pointer-events:none;
@@ -42,7 +43,7 @@
   /* チョコちゃん */
   #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(84px,14vw,128px); pointer-events:none; }
   #choco img{ width:100%; display:block; }
-  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(84px,14vw,128px) + 6px); z-index:20; max-width:min(46vw,360px);
+  #bubble{ position:fixed; left:10px; bottom:calc(86px + clamp(84px,14vw,128px) + 6px); z-index:20; width:186px;
     background:#fff; border:4px solid #f0b429; border-radius:20px; padding:10px 16px;
     font-size:clamp(18px,3vw,25px); font-weight:bold; color:#5a4512; box-shadow:0 4px 0 rgba(140,90,20,.3); }
   #bubble:after{ content:""; position:absolute; left:40px; bottom:-16px; border:8px solid transparent; border-top:10px solid #f0b429; }
@@ -64,9 +65,10 @@
     background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:14px 34px; box-shadow:0 5px 0 rgba(40,90,130,.35); }
   a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,.35); }
   @media (max-aspect-ratio: 3/4){
-    #stage{ flex-direction:column; gap:2vh; padding-top:86px; }
+    #stage{ flex-direction:column; gap:2vh; padding:86px 2vw 108px; }
     .panel{ width:100%; max-height:none; }
     #bubble{ display:none; }
+    #choco{ display:none; }
   }
 </style>
 </head>

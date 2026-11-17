@@ -8,27 +8,35 @@
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body{
     font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
-    background:#fdf6e3; color:#33302a; min-height:100vh;
-    display:flex; flex-direction:column; align-items:center; padding:26px 16px 40px;
+    background:#fdf6e3; color:#33302a; height:100dvh;
+    display:flex; flex-direction:column; align-items:center; padding:14px 16px 16px;
     touch-action:manipulation; user-select:none; -webkit-user-select:none;
   }
   h1{
-    font-size:clamp(30px, 6vw, 52px); color:#7a4a12; text-align:center; line-height:1.5; margin-top:4vh;
+    font-size:clamp(28px, 5vw, 44px); color:#7a4a12; text-align:center; line-height:1.4; margin-top:0;
   }
-  .games{ display:flex; flex-direction:column; gap:26px; margin-top:5vh; width:min(92vw, 640px); }
+  /* 2カラム×3行で画面の高さにぴったり収める（スクロールさせない） */
+  .games{ display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0, 1fr); gap:16px;
+    margin-top:14px; width:min(94vw, 880px); flex:1; min-height:0; }
   a.gamebtn{
-    display:flex; align-items:center; gap:20px; text-decoration:none;
-    background:#fff; border:5px solid #f0b429; border-radius:26px; padding:26px 28px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    text-decoration:none; text-align:center; min-height:0; overflow:hidden;
+    background:#fff; border:5px solid #f0b429; border-radius:26px; padding:12px 12px;
     box-shadow:0 8px 0 rgba(140,90,20,0.35);
   }
   a.gamebtn:active{ transform:translateY(4px); box-shadow:0 3px 0 rgba(140,90,20,0.35); }
-  a.gamebtn .emo{ font-size:clamp(56px, 11vw, 84px); line-height:1; }
-  a.gamebtn .tx .t{ font-size:clamp(28px, 5.4vw, 42px); font-weight:bold; color:#4c3d20; line-height:1.35; }
-  a.gamebtn .tx .d{ font-size:clamp(17px, 3vw, 22px); font-weight:bold; color:#97835e; margin-top:4px; }
+  a.gamebtn .emo{ font-size:clamp(44px, 9vh, 64px); line-height:1; }
+  a.gamebtn .tx .t{ font-size:clamp(24px, 3.4vw, 33px); font-weight:bold; color:#4c3d20; line-height:1.35; }
+  a.gamebtn .tx .d{ font-size:clamp(14px, 2vw, 18px); font-weight:bold; color:#97835e; margin-top:3px; line-height:1.35; }
+  /* スマホ等の細い画面では1カラムに戻してスクロール可にする */
+  @media (max-width:600px){
+    body{ height:auto; min-height:100dvh; }
+    .games{ grid-template-columns:1fr; flex:none; }
+  }
   a.backbtn{
-    margin-top:6vh; display:inline-block; text-decoration:none;
+    margin-top:14px; display:inline-block; text-decoration:none;
     font-size:clamp(22px, 4vw, 30px); font-weight:bold; color:#20506e;
-    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:16px 34px;
+    background:#dceefb; border:4px solid #7db3dd; border-radius:999px; padding:12px 30px;
     box-shadow:0 5px 0 rgba(40,90,130,0.35);
   }
   a.backbtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,0.35); }
@@ -42,7 +50,7 @@
 </head>
 <body>
 <button id="fsBtn">⛶ ぜんがめん</button>
-<h1>どの ゲームで<br>あそぶ？</h1>
+<h1>どの ゲームで あそぶ？</h1>
 <div class="games">
   <a class="gamebtn" href="slot.html">
     <span class="emo">🎰</span>

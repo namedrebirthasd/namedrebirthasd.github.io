@@ -93,6 +93,7 @@
 <div id="topbar">
   <button class="tbtn" id="bgmBtn">🎵 おんがく オン</button>
   <button class="tbtn" id="seBtn">🔔 おと オン</button>
+  <button class="tbtn" id="maskBtn">＊ ふせじ オン</button>
   <div id="counter">⭐ <span id="countNum">0</span> / 10 もん</div>
   <button class="tbtn" id="fsBtn">⛶ ぜんがめん</button>
 </div>
@@ -213,10 +214,29 @@ function bgmTick(){
 function bgmStart(){ if(bgmTimer || !bgmOn) return; bgmTick(); }
 function bgmStop(){ clearTimeout(bgmTimer); bgmTimer = null; }
 const bgmBtn = document.getElementById("bgmBtn"), seBtn = document.getElementById("seBtn");
-function syncBtns(){ bgmBtn.textContent = bgmOn ? "🎵 おんがく オン" : "🎵 おんがく オフ"; seBtn.textContent = seOn ? "🔔 おと オン" : "🔔 おと オフ"; }
+const maskBtn = document.getElementById("maskBtn");
+let maskOn = localStorage.getItem("quiz_mask") !== "0"; /* 既定オン（全部見えると簡単すぎるため） */
+function syncBtns(){ bgmBtn.textContent = bgmOn ? "🎵 おんがく オン" : "🎵 おんがく オフ"; seBtn.textContent = seOn ? "🔔 おと オン" : "🔔 おと オフ"; maskBtn.textContent = maskOn ? "＊ ふせじ オン" : "＊ ふせじ オフ"; }
 bgmBtn.addEventListener("click", ()=>{ bgmOn = !bgmOn; localStorage.setItem("quiz_bgm", bgmOn ? "1" : "0"); syncBtns(); if(bgmOn){ ac(); bgmStart(); } else bgmStop(); });
 seBtn.addEventListener("click", ()=>{ seOn = !seOn; localStorage.setItem("quiz_se", seOn ? "1" : "0"); syncBtns(); if(seOn) seTap(); });
+maskBtn.addEventListener("click", ()=>{ maskOn = !maskOn; localStorage.setItem("quiz_mask", maskOn ? "1" : "0"); syncBtns(); if(!locked && current) renderTiles(); });
 syncBtns();
+/* ふせじ：名前の1文字を ＊ にする。1文字の名前はそのまま。
+   正解タイルでは「お題のかな」自体は隠さない（隠すと手がかりが消えて理不尽になるため） */
+function maskName(joined, isCorrect, kana){
+  if(!maskOn) return joined;
+  const chars = [...joined];
+  if(chars.length <= 1) return joined;
+  const pos = [];
+  chars.forEach((c, i) => {
+    if(c === "／") return;
+    if(isCorrect && c === kana) return;
+    pos.push(i);
+  });
+  if(!pos.length) return joined;
+  chars[pos[Math.floor(Math.random()*pos.length)]] = "＊";
+  return chars.join("");
+}
 const fsBtn = document.getElementById("fsBtn");
 function syncFsLabel(){ fsBtn.textContent = document.fullscreenElement ? "⛶ もどす" : "⛶ ぜんがめん"; }
 fsBtn.addEventListener("click", ()=>{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else document.documentElement.requestFullscreen().catch(()=>{}); });
@@ -266,13 +286,16 @@ function nextQuestion(){
   } else {
     qText.innerHTML = `<span class="bigKana">${kana}</span> が はいっている<br>ことばの 絵は どれ？`;
   }
+  renderTiles();
+}
+function renderTiles(){
   tilesEl.innerHTML = "";
   current.tiles.forEach((t) => {
     const b = document.createElement("button");
-    b.className = "tile";
+    b.className = "tile" + (t.wrongFlag ? " wrong" : "");
     b.innerHTML = t.text !== undefined
       ? `<span class="txt">${t.text}</span>`
-      : `<span class="emo">${t.emoji}</span><span class="nm">${t.name}</span>`;
+      : `<span class="emo">${t.emoji}</span><span class="nm">${maskName(t.name, t.correct, current.kana)}</span>`;
     b.addEventListener("click", ()=> answer(b, t));
     tilesEl.appendChild(b);
   });
@@ -282,6 +305,7 @@ function answer(btn, t){
   ac(); bgmStart();
   if(!t.correct){
     wrongsThisQ++;
+    t.wrongFlag = true;
     btn.classList.add("wrong", "shake");
     setTimeout(()=> btn.classList.remove("shake"), 320);
     seWrong();
@@ -343,7 +367,10 @@ window.__quiz = {
   tiles(){ return [...tilesEl.children].map(b => ({ text: b.textContent.trim(), wrong: b.classList.contains("wrong") })); },
   answerIndex(){ return current ? current.tiles.findIndex(t => t.correct) : -1; },
   tap(i){ const b = tilesEl.children[i]; if(b) b.click(); },
-  buildQuiz, KANA_POOL,
+  buildQuiz, KANA_POOL, maskName,
+  get maskOn(){ return maskOn; },
+  toggleMask(){ maskBtn.click(); },
+  displayNames(){ return [...tilesEl.querySelectorAll(".nm")].map(el => el.textContent); },
 };
 </script>
 

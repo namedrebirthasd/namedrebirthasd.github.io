@@ -15,23 +15,23 @@
   h1{
     font-size:clamp(28px, 5vw, 44px); color:#7a4a12; text-align:center; line-height:1.4; margin-top:0;
   }
-  /* 2カラム×3行で画面の高さにぴったり収める（スクロールさせない） */
-  .games{ display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0, 1fr); gap:16px;
-    margin-top:14px; width:min(94vw, 880px); flex:1; min-height:0; }
+  /* 2カラム×4行で画面の高さにぴったり収める（スクロールさせない・7ボタン対応） */
+  .games{ display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:minmax(0, 1fr); gap:12px;
+    margin-top:10px; width:min(94vw, 880px); flex:1; min-height:0; }
   a.gamebtn{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
     text-decoration:none; text-align:center; min-height:0; overflow:hidden;
-    background:#fff; border:5px solid #f0b429; border-radius:26px; padding:12px 12px;
+    background:#fff; border:5px solid #f0b429; border-radius:26px; padding:8px 12px;
     box-shadow:0 8px 0 rgba(140,90,20,0.35);
   }
   a.gamebtn:active{ transform:translateY(4px); box-shadow:0 3px 0 rgba(140,90,20,0.35); }
-  a.gamebtn .emo{ font-size:clamp(44px, 9vh, 64px); line-height:1; }
-  a.gamebtn .tx .t{ font-size:clamp(24px, 3.4vw, 33px); font-weight:bold; color:#4c3d20; line-height:1.35; }
+  a.gamebtn .emo{ font-size:clamp(36px, 7vh, 52px); line-height:1; }
+  a.gamebtn .tx .t{ font-size:clamp(22px, 3vw, 30px); font-weight:bold; color:#4c3d20; line-height:1.35; }
   a.gamebtn .tx .d{ font-size:clamp(14px, 2vw, 18px); font-weight:bold; color:#97835e; margin-top:3px; line-height:1.35; }
   /* スマホ等の細い画面では1カラムに戻してスクロール可にする */
   @media (max-width:600px){
     body{ height:auto; min-height:100dvh; }
-    .games{ grid-template-columns:1fr; flex:none; }
+    .games{ grid-template-columns:1fr; grid-template-rows:none; flex:none; }
   }
   a.backbtn{
     margin-top:14px; display:inline-block; text-decoration:none;
@@ -62,7 +62,7 @@
   </a>
   <a class="gamebtn" href="sakana_kanji.html">
     <span class="emo">🐟</span>
-    <span class="tx"><span class="t">さかな漢字クイズ</span><span class="d" style="display:block;">魚へんの かんじの よみかたを あてる クイズ</span></span>
+    <span class="tx"><span class="t">さかな漢字クイズ</span><span class="d" style="display:block;">魚へんの かんじクイズ</span></span>
   </a>
   <a class="gamebtn" href="hana.html">
     <span class="emo">🌸</span>
@@ -70,11 +70,15 @@
   </a>
   <a class="gamebtn" href="suisou.html">
     <span class="emo">🐠</span>
-    <span class="tx"><span class="t">すいぞくかん</span><span class="d" style="display:block;">タップで ごはんを あげると おさかなが よってくるよ</span></span>
+    <span class="tx"><span class="t">すいぞくかん</span><span class="d" style="display:block;">ごはんを あげよう 🐠</span></span>
   </a>
   <a class="gamebtn" href="machigai.html">
     <span class="emo">🔍</span>
-    <span class="tx"><span class="t">まちがいさがし</span><span class="d" style="display:block;">2まいの 絵の ちがう所を 3つ さがす ゲーム</span></span>
+    <span class="tx"><span class="t">まちがいさがし</span><span class="d" style="display:block;">3まいクリアで おわり！</span></span>
+  </a>
+  <a class="gamebtn" href="sansuu.html">
+    <span class="emo">🔢</span>
+    <span class="tx"><span class="t">さんすうクイズ</span><span class="d" style="display:block;">かぞえる・たし算・ひき算の クイズ</span></span>
   </a>
 </div>
 <a class="backbtn" href="index.html">🕐 とけいに もどる</a>

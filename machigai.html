@@ -59,6 +59,22 @@
   #announce .sub{ margin-top:12px; font-size:clamp(24px,4.6vw,40px); font-weight:bold; color:#fff; text-shadow:0 3px 0 rgba(90,60,20,.5); }
   #fadeVeil{ position:fixed; inset:0; z-index:35; background:#fff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
 
+  /* おわり画面（3まい＝1セットの終わり） */
+  #endScreen{ position:fixed; inset:0; z-index:45; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(255,250,235,.97); text-align:center; padding:20px; }
+  #endScreen.show{ display:flex; }
+  #endScreen .big{ font-size:clamp(44px,9vw,92px); font-weight:bold; color:#a03d63; line-height:1.3;
+    text-shadow:0 3px 0 rgba(160,50,90,.2); }
+  #endScreen .sub{ margin-top:14px; font-size:clamp(26px,5vw,44px); font-weight:bold; color:#5a4512; }
+  #endScreen .sets{ margin-top:10px; font-size:clamp(22px,4.2vw,36px); font-weight:bold; color:#7a4a12; }
+  #endScreen .endbtns{ margin-top:28px; display:flex; flex-direction:column; gap:18px; align-items:center; }
+  #endScreen .endbtns button, #endScreen .endbtns a{ cursor:pointer; text-decoration:none; font-family:inherit;
+    font-size:clamp(26px,4.6vw,38px); font-weight:bold; padding:16px 40px; border-radius:999px; }
+  #againBtn{ color:#fff; background:#ff8fb0; border:4px solid #e0608a; box-shadow:0 5px 0 rgba(150,60,90,.4); }
+  #againBtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(150,60,90,.4); }
+  #endBackBtn{ color:#20506e; background:#dceefb; border:4px solid #7db3dd; box-shadow:0 5px 0 rgba(40,90,130,.35); }
+  #endBackBtn:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,90,130,.35); }
+
   /* 下部 */
   #bottombar{ position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center; padding:12px; pointer-events:none; }
   a.backbtn{ pointer-events:auto; text-decoration:none; font-size:clamp(22px,4vw,30px); font-weight:bold; color:#20506e;
@@ -76,7 +92,7 @@
 <div id="topbar">
   <button class="tbtn" id="bgmBtn">🎵 おんがく オン</button>
   <button class="tbtn" id="seBtn">🔔 おと オン</button>
-  <div id="counter">みつけた ⭐ <span id="foundNum">0</span> / 3</div>
+  <div id="counter">みつけた ⭐ <span id="foundNum">0</span> / 3 ・ <span id="roundNum">1</span>まいめ</div>
   <button class="tbtn" id="fsBtn">⛶ ぜんがめん</button>
 </div>
 
@@ -91,15 +107,28 @@
 <div id="fadeVeil" style="opacity:1"></div>
 <div id="announce"><div class="big"></div><div class="sub"></div></div>
 
+<div id="endScreen">
+  <div class="big">🎉 ぜんぶ おわったよ！</div>
+  <div class="sub" id="endSub">3まい ぜんぶ みつけた！ すごい！</div>
+  <div class="sets" id="endSets"></div>
+  <div class="endbtns">
+    <button id="againBtn">🔁 もういっかい</button>
+    <a href="index.html" id="endBackBtn">🕐 とけいに もどる</a>
+  </div>
+</div>
+
 <div id="bottombar"><a class="backbtn" href="index.html">🕐 とけいに もどる</a></div>
 
 <script>
 "use strict";
 /* ============================================================
-   まちがいさがし v1.0（老人向け・負けなし）
+   まちがいさがし v2.0（老人向け・負けなし）
    左右2枚の絵の違いは3つ。タップで当てるだけ。
    間違えても罰なし。45秒 手が止まったら ヒントが点滅する。
    絵は絵文字の配置で自動生成（問題は無限）。
+   v2.0（2026-11-22）：3まい＝1セットで「おわり」画面を付けた
+   （延々と続いて飽きる、という本人の報告を受けて）。
+   テーマ6種、違いは4種（いれかえ／きえる／うごく／おおきい）。
    ============================================================ */
 const THEMES = [
   { name:"にわ", bg:"linear-gradient(#aee3ff 0%, #d8f3ff 40%, #9ed98a 41%, #6fb85c 100%)",
@@ -110,6 +139,10 @@ const THEMES = [
     pool:["🌲","🍄","🦊","🐿️","🦉","🍂","🐻","🦌","🍓","🐦"] },
   { name:"おへや", bg:"linear-gradient(#ffe9f2 0%, #fff6e8 55%, #f3d9b8 56%, #e5c491 100%)",
     pool:["🪴","🕐","📚","🧸","🛋️","🍰","☕","🐈","🖼️","💡"] },
+  { name:"おまつり", bg:"linear-gradient(#ffe9a8 0%, #fff3d6 40%, #ffb3a0 41%, #ff8f7a 100%)",
+    pool:["🎆","🍧","🏮","👘","🍡","🎏","🍉","🎇","🍦","🥁"] },
+  { name:"ゆき", bg:"linear-gradient(#dfeeff 0%, #f4faff 45%, #cfe3ff 46%, #a9c8f0 100%)",
+    pool:["⛄","❄️","🎄","🧣","☃️","🧤","🎿","⛸️","🌨️","🔔"] },
 ];
 /* 配置スロット（%座標・7か所） */
 const SLOTS = [
@@ -162,9 +195,20 @@ document.addEventListener("fullscreenchange", syncFsLabel);
 /* ---------- ゲーム本体 ---------- */
 const panelL = document.getElementById("panelL"), panelR = document.getElementById("panelR");
 const foundNum = document.getElementById("foundNum");
+const roundNum = document.getElementById("roundNum");
 const bubble = document.getElementById("bubble");
 const announceEl = document.getElementById("announce");
+const endScreen = document.getElementById("endScreen");
+const endSets = document.getElementById("endSets");
 let cleared = parseInt(localStorage.getItem("machigai_cleared") || "0", 10) || 0;
+let setsCleared = parseInt(localStorage.getItem("machigai_sets") || "0", 10) || 0;
+const SET_ROUNDS = 3;   /* 3まい＝1セットでおわり */
+let roundInSet = 1;
+document.getElementById("againBtn").addEventListener("click", ()=>{
+  endScreen.classList.remove("show");
+  roundInSet = 1;
+  newRound();
+});
 let round = null;       // { theme, left:[{slot,emo}], diffs:[{slot, kind}] , found:Set }
 let lastAction = Date.now();
 let bubbleTimer = null;
@@ -189,19 +233,23 @@ function sparks(x, y, n){
 function newRound(){
   const theme = THEMES[Math.floor(Math.random()*THEMES.length)];
   const slotIdx = shuffle(SLOTS.map((_, i) => i)).slice(0, 7);
+  const freeSlot = SLOTS.map((_, i) => i).find(i => !slotIdx.includes(i)); /* 8か所のうち空いた1か所（うごく用） */
   const emos = shuffle(theme.pool).slice(0, 7);
   const left = slotIdx.map((s, i) => ({ slot: s, emo: emos[i] }));
   const diffSlots = shuffle(slotIdx).slice(0, DIFF_COUNT);
   const usedEmos = new Set(emos);
   const spare = theme.pool.filter(e => !usedEmos.has(e));
+  /* 違いの種類は1まいごとに3種をランダムに（いれかえ／きえる／うごく／おおきい） */
+  const kinds = shuffle(["swap", "remove", "move", "big"]).slice(0, DIFF_COUNT);
   const diffs = diffSlots.map((s, i) => {
-    const kind = (i % 2 === 0) ? "swap" : "remove";
+    const kind = kinds[i];
     return { slot: s, kind, to: kind === "swap" ? spare[i % spare.length] : null };
   });
-  round = { theme, left, diffs, found: new Set() };
+  round = { theme, left, diffs, found: new Set(), freeSlot };
   foundNum.textContent = "0";
+  roundNum.textContent = String(roundInSet);
   render();
-  say("ちがう所は 3つ あるよ 🔍", 3600);
+  say(roundInSet + "まいめ！ ちがう所は 3つ あるよ 🔍", 3600);
   lastAction = Date.now();
 }
 function render(){
@@ -212,9 +260,19 @@ function render(){
       const d = round.diffs.find(dd => dd.slot === item.slot);
       if(isRight && d){
         if(d.kind === "remove") continue;
+        if(d.kind === "move") continue; /* 右では元の場所から消え、空きスロットに移る */
+        if(d.kind === "big"){ placeObj(panel, item.slot, item.emo, true); continue; }
         placeObj(panel, item.slot, d.to);
       } else {
         placeObj(panel, item.slot, item.emo);
+      }
+    }
+    /* うごく：右のパネルでは空きスロットに同じ絵を置く */
+    if(isRight){
+      for(const d of round.diffs){
+        if(d.kind !== "move") continue;
+        const item = round.left.find(it => it.slot === d.slot);
+        if(item) placeObj(panel, round.freeSlot, item.emo);
       }
     }
     for(const d of round.diffs){
@@ -223,15 +281,23 @@ function render(){
         const r = document.createElement("div");
         r.className = "ring"; r.style.left = s.x + "%"; r.style.top = s.y + "%";
         panel.appendChild(r);
+        /* うごくは右のパネルでは移り先にも丸を付ける */
+        if(isRight && d.kind === "move"){
+          const fs = SLOTS[round.freeSlot];
+          const r2 = document.createElement("div");
+          r2.className = "ring"; r2.style.left = fs.x + "%"; r2.style.top = fs.y + "%";
+          panel.appendChild(r2);
+        }
       }
     }
   }
 }
-function placeObj(panel, slot, emo){
+function placeObj(panel, slot, emo, big){
   const s = SLOTS[slot];
   const el = document.createElement("div");
   el.className = "obj"; el.textContent = emo;
   el.style.left = s.x + "%"; el.style.top = s.y + "%";
+  if(big) el.style.fontSize = "clamp(64px,11vw,110px)"; /* おおきい：右だけ1.4倍くらい */
   panel.appendChild(el);
 }
 function judgeTap(panel, clientX, clientY){
@@ -251,7 +317,12 @@ function judgeTap(panel, clientX, clientY){
   rip.className = "tapRip"; rip.style.left = px + "%"; rip.style.top = py + "%";
   panel.appendChild(rip); setTimeout(()=> rip.remove(), 550);
   if(bestD > 15) { seSoft(); return; }
-  const diff = round.diffs.find(d => d.slot === best);
+  /* うごく：移り先（空きスロット）をタップした場合も、その違いとして扱う */
+  let diff = round.diffs.find(d => d.slot === best);
+  if(!diff && best === round.freeSlot){
+    diff = round.diffs.find(d => d.kind === "move" && !round.found.has(d.slot));
+    if(diff) best = diff.slot;
+  }
   if(diff && !round.found.has(best)){
     round.found.add(best);
     foundNum.textContent = String(round.found.size);
@@ -264,11 +335,24 @@ function judgeTap(panel, clientX, clientY){
       cleared++;
       localStorage.setItem("machigai_cleared", String(cleared));
       seClear();
+      const lastInSet = roundInSet >= SET_ROUNDS;
       announceEl.querySelector(".big").textContent = "🎉 ぜんぶ みつけた！";
-      announceEl.querySelector(".sub").textContent = "すごい！ つぎの 絵に いくよ";
+      announceEl.querySelector(".sub").textContent = lastInSet ? "3まい おわりだよ 🎉" : "すごい！ つぎの 絵に いくよ";
       announceEl.classList.add("show");
       say("やったね！ ぜんぶ 見つけた 🎉", 3000);
-      setTimeout(()=>{ announceEl.classList.remove("show"); newRound(); }, 3400);
+      setTimeout(()=>{
+        announceEl.classList.remove("show");
+        if(lastInSet){
+          setsCleared++;
+          localStorage.setItem("machigai_sets", String(setsCleared));
+          endSets.textContent = "いままでに " + setsCleared + "かい クリア 🎉";
+          endScreen.classList.add("show");
+          say("3まい おわったよ！ すごいね 🎉", 4000);
+        } else {
+          roundInSet++;
+          newRound();
+        }
+      }, 3400);
     } else {
       say("みつけた！ ⭐ あと " + (DIFF_COUNT - round.found.size) + " つ", 2600);
     }
@@ -309,7 +393,12 @@ requestAnimationFrame(()=>{ setTimeout(()=>{ const v = document.getElementById("
 window.__machigai = {
   get found(){ return round ? round.found.size : 0; },
   get cleared(){ return cleared; },
+  get roundInSet(){ return roundInSet; },
+  get sets(){ return setsCleared; },
+  get endShown(){ return endScreen.classList.contains("show"); },
   diffSlots(){ return round ? round.diffs.map(d => d.slot) : []; },
+  diffKinds(){ return round ? round.diffs.map(d => d.kind) : []; },
+  freeSlot(){ return round ? round.freeSlot : -1; },
   slotPos(i){ return SLOTS[i]; },
   tapSlot(i, right){
     const panel = right ? panelR : panelL;

@@ -831,5 +831,20 @@ const MascotFeature = (() => {
   window.__clockOverlay = { open: openGames, close: closeGames, isOpen: function(){ return overlay.classList.contains("open"); } };
 })();
 </script>
+<script>
+/* 自動リロード（2026-11-22追加）：常時表示のままだと更新が画面に届かないため、
+   毎朝4時ちょうどに、ゲームの窓が閉じている時だけページを読み直す。
+   これで名前変更やゲーム追加が、放っておいても翌朝には反映される */
+(function(){
+  "use strict";
+  setInterval(function(){
+    var now = new Date();
+    if (now.getHours() === 4 && now.getMinutes() === 0) {
+      var ov = document.getElementById("gameOverlay");
+      if (!ov || !ov.classList.contains("open")) location.reload();
+    }
+  }, 20000);
+})();
+</script>
 </body>
 </html>

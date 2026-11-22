@@ -231,19 +231,19 @@
 
   /* ---------- もふもふ（左下・2026-11-22追加） ----------
      あそぶボタン（z-index:30）の裏レイヤー（z-index:10）に置く飾りキャラ。
-     長押しで表示/非表示（家族用の撤退スイッチ。仕組みは末尾の JollyFeature）。
-     不要になったら、このCSSと .jolly の <div>、末尾の JollyFeature ブロック、
-     jolly.png を消し、ヒント文の left と「もふもふ長押しで出し入れ」を戻せば完全に元通り */
+     仕様はナビと同じ：タップで反応、長押しで大きさ循環（末尾の JollyFeature）。
+     幅は JollyFeature が段階で上書きする。ここの値はJS前の見た目の初期値。
+     不要になったら、このCSSと .jolly の <div>、末尾の JollyFeature ブロックを
+     消せば完全に元通り（画像はHTML埋め込みなので消すものは無い） */
   .jolly{
     position:absolute;left:10px;bottom:0;z-index:10;
-    width:clamp(90px,20vh,170px); /* ヒント文の left と揃えること */
+    width:clamp(185px,42vh,375px); /* 既定段階「大」＝JollyFeatureのSIZES[2]と揃える */
     touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     filter:drop-shadow(0 3px 5px rgba(60,40,20,.20));
     animation:jolly-sway 5s ease-in-out infinite;
     transform-origin:bottom center;
   }
   .jolly img{width:100%;display:block;-webkit-user-drag:none;pointer-events:none}
-  .jolly.off img{visibility:hidden}
   @keyframes jolly-sway{
     0%,100%{transform:rotate(-1.4deg)}
     50%{transform:rotate(1.4deg)}
@@ -254,7 +254,7 @@
 
   /* ---------- 家族用ヒント（左下・小さく） ---------- */
   .hint{
-    position:absolute;left:calc(clamp(90px,20vh,170px) + 28px);bottom:12px;z-index:5; /* 左端はもふもふの居場所ぶん空ける（2026-11-22） */
+    position:absolute;left:20px;bottom:12px;z-index:5;
     font-size:12px;font-weight:700;color:var(--ink-soft);opacity:.65;
   }
 
@@ -341,7 +341,7 @@
     <div class="drawer-note">緑の ● がついている日は予定があります ／ 赤い数字は土・日・祝日 ／ 金色のワクが「今日」です</div>
   </div>
 
-  <div class="hint">家族用：予定を長押しで書きかえ ／ キャラをタップで反応・長押しで大きさ変更 ／ もふもふ長押しで出し入れ</div>
+  <div class="hint">家族用：予定を長押しで書きかえ ／ キャラをタップで反応・長押しで大きさ変更</div>
   <div class="toast" id="toast"></div>
 
   <div class="modal-back" id="editBack">
@@ -866,34 +866,51 @@ const MascotFeature = (() => {
 /* ============================================================
    JollyFeature（もふもふ：独立ブロック, 2026-11-22追加）
    - 左下・あそぶボタン（z-index:30）の裏レイヤー（z-index:10）の飾りキャラ
-   - タップ：小さく跳ねるだけ（ボタンや予定の操作は邪魔しない）
-   - 長押し（750ms）：表示/非表示を切り替える＝家族用の撤退スイッチ。
-     非表示でも置き場所（透明の受け皿）だけは残るので、同じ場所の
-     長押しでいつでも戻せる。設定は端末に保存される。
-   - 外し方：このブロックと、HTMLの .jolly の <div>、CSSの .jolly、
-     ヒント文の left と「もふもふ長押しで出し入れ」、jolly.png を消せば完全に元通り。
+   - 仕様はナビ（MascotFeature）と同一（2026-11-22 本人指示で統一）：
+     タップ：小さく跳ねるだけ（ボタンや予定の操作は邪魔しない）
+     長押し（750ms）：大きさを循環する。段階と既定（大）もナビと同一。
+     設定は端末に保存される。表示/非表示のスイッチは無い
+     （本当に邪魔なら版上げでブロックごと外す、が本人の方針）。
+   - 画像は .jolly の <img> に data URI で埋め込み（リポジトリに
+     バイナリを置けない都合。原本は goal の files フォルダの jolly.png）。
+   - 外し方：このブロックと、HTMLの .jolly の <div>、CSSの .jolly を消せば元通り。
    ============================================================ */
 (function(){
   "use strict";
-  var KEY = "elderCal_jolly";
+  var SIZES = [
+    { name:"小",       width:"clamp(120px,24vh,215px)" },
+    { name:"中",       width:"clamp(150px,32vh,285px)" },
+    { name:"大",       width:"clamp(185px,42vh,375px)" },
+    { name:"特大",     width:"clamp(230px,52vh,470px)" },
+    { name:"超特大",   width:"clamp(275px,62vh,565px)" },
+    { name:"超超特大", width:"clamp(320px,72vh,660px)" }
+  ];
+  var DEFAULT_INDEX = 2; /* ナビと同一：既定は「大」 */
+  var KEY = "elderCal_jollySize";
   var el = document.getElementById("jolly");
   if (!el) return;
   var img = el.querySelector("img");
-  var on = true;
-  try { on = localStorage.getItem(KEY) !== "off"; } catch(e) {}
-  function apply(){
-    el.classList.toggle("off", !on);
-    try { localStorage.setItem(KEY, on ? "on" : "off"); } catch(e) {}
+  var index = DEFAULT_INDEX;
+  try {
+    var v = parseInt(localStorage.getItem(KEY) || "", 10);
+    if (Number.isInteger(v) && v >= 0 && v < SIZES.length) index = v;
+  } catch(e) {}
+  function save(){
+    try { localStorage.setItem(KEY, String(index)); } catch(e) {}
+  }
+  function applySize(){
+    el.style.width = SIZES[index].width;
+  }
+  function cycleSize(){
+    index = (index + 1) % SIZES.length;
+    applySize(); save();
+    if (typeof toast === "function") toast("もふもふの大きさ：" + SIZES[index].name);
   }
   var pressTimer = null, longPressed = false, pressStart = 0;
-  function toggle(){
-    on = !on; apply();
-    if (typeof toast === "function") toast(on ? "もふもふを 出しました" : "もふもふを 消しました（長押しで戻ります）");
-  }
   function startPress(){
     longPressed = false; pressStart = Date.now();
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(function(){ longPressed = true; toggle(); }, 750);
+    pressTimer = setTimeout(function(){ longPressed = true; cycleSize(); }, 750);
   }
   function endPress(){ clearTimeout(pressTimer); }
   el.addEventListener("pointerdown", startPress);
@@ -903,13 +920,13 @@ const MascotFeature = (() => {
   el.addEventListener("click", function(){
     if (longPressed) { longPressed = false; return; }
     var held = pressStart ? Date.now() - pressStart : 0;
-    if (held >= 650) { toggle(); return; } /* タイマーが奪われた場合の保険：押下時間でも判定 */
-    if (!on || !img) return;
+    if (held >= 650) { cycleSize(); return; } /* タイマーが奪われた場合の保険：押下時間でも判定 */
+    if (!img) return;
     img.animate([
       { transform:"translateY(0)" }, { transform:"translateY(-7%)" }, { transform:"translateY(0)" }
     ], { duration:320, easing:"ease-out" });
   });
-  apply();
+  applySize();
 })();
 </script>
 </body>

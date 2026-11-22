@@ -237,7 +237,7 @@
      消せば完全に元通り（画像はHTML埋め込みなので消すものは無い） */
   .jolly{
     position:absolute;left:10px;bottom:0;z-index:10;
-    width:clamp(185px,42vh,375px); /* 既定段階「大」＝JollyFeatureのSIZES[2]と揃える */
+    width:clamp(150px,32vh,285px); /* 既定段階「中」＝JollyFeatureのSIZES[1]と揃える */
     touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     filter:drop-shadow(0 3px 5px rgba(60,40,20,.20));
     animation:jolly-sway 5s ease-in-out infinite;
@@ -868,7 +868,8 @@ const MascotFeature = (() => {
    - 左下・あそぶボタン（z-index:30）の裏レイヤー（z-index:10）の飾りキャラ
    - 仕様はナビ（MascotFeature）と同一（2026-11-22 本人指示で統一）：
      タップ：小さく跳ねるだけ（ボタンや予定の操作は邪魔しない）
-     長押し（750ms）：大きさを循環する。段階と既定（大）もナビと同一。
+     長押し（750ms）：大きさを循環する。段階表はナビと同一、既定だけ
+     「中」に下げてある（丸い体＋耳で、同幅でも見た目がナビの約2倍になるため）。
      設定は端末に保存される。表示/非表示のスイッチは無い
      （本当に邪魔なら版上げでブロックごと外す、が本人の方針）。
    - 画像は .jolly の <img> に data URI で埋め込み（リポジトリに
@@ -885,7 +886,9 @@ const MascotFeature = (() => {
     { name:"超特大",   width:"clamp(275px,62vh,565px)" },
     { name:"超超特大", width:"clamp(320px,72vh,660px)" }
   ];
-  var DEFAULT_INDEX = 2; /* ナビと同一：既定は「大」 */
+  var DEFAULT_INDEX = 1; /* 既定は「中」。段階表はナビと同一だが、もふもふは
+    丸い体が枠いっぱいに広がり耳まであるので、同幅でも見た目の面積は
+    ナビの約2倍になる（2026-11-22 本人判定）。既定は1段下げて「中」 */
   var KEY = "elderCal_jollySize";
   var el = document.getElementById("jolly");
   if (!el) return;

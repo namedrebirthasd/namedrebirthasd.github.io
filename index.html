@@ -92,12 +92,6 @@
     display:flex;align-items:stretch;justify-content:center;gap:clamp(10px,2vw,22px);
     margin-top:clamp(6px,1.6vh,16px);
   }
-  .ampm{
-    display:flex;align-items:center;justify-content:center;
-    font-size:clamp(22px,4.4vh,40px);font-weight:800;color:var(--calm);
-    background:#eaf3fc;border:3px solid #c9def2;border-radius:18px;
-    padding:0 clamp(10px,1.8vw,20px);
-  }
   .clock{
     font-size:clamp(88px,21vh,200px);   /* 実機の空きに合わせて拡大（2026-10-27） */
     font-weight:800;line-height:1;letter-spacing:.02em;
@@ -302,7 +296,6 @@
   <div class="weather-row"><div id="weatherPill">そとの てんき <span class="wicon" id="wIcon"></span><span id="wWord"></span>　いま <span id="wNow"></span>℃　きょうは <span id="wMin"></span>〜<span id="wMax"></span>℃</div></div>
 
   <div class="clock-row">
-    <div class="ampm" id="ampm">午前</div>
     <div class="clock"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span></div>
   </div>
 
@@ -492,10 +485,9 @@ function render(now){
   $("youbiText").textContent = "（" + w.name + "）";
   $("youbiIcon").textContent = w.icon;
 
-  /* --- 時刻（12時間表示・設計書どおり 08:59 形式） --- */
+  /* --- 時刻（24時間表示。2026-11-22 本人指示：一目で午前午後が分かるよう12時間＋午前/午後バッジから変更） --- */
   const h24 = now.getHours();
-  $("ampm").textContent = h24 < 12 ? "午前" : "午後";
-  $("hh").textContent = pad(h24 % 12 === 0 ? 12 : h24 % 12);
+  $("hh").textContent = pad(h24);
   $("mm").textContent = pad(now.getMinutes());
 
   /* --- 予定：17時までは今日、17時からは明日 --- */

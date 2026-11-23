@@ -21,31 +21,39 @@
     padding:8px 30px; font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
 
   /* 問題 */
-  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:84px 16px 108px; }
+  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:74px 16px 96px; }
   #qText{ font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#1d5c38; text-align:center; line-height:1.45;
-    background:rgba(255,255,255,.88); border:4px solid #4da56b; border-radius:26px; padding:14px 30px; box-shadow:0 4px 0 rgba(25,80,45,.25); }
+    background:rgba(255,255,255,.88); border:4px solid #4da56b; border-radius:26px; padding:10px 26px; box-shadow:0 4px 0 rgba(25,80,45,.25); }
   /* 計算式のカード */
-  #qCard{ font-size:clamp(64px,13vw,110px); font-weight:bold; color:#14402a; line-height:1.2; text-align:center;
-    background:#fff; border:6px solid #6fbf87; border-radius:30px; padding:10px 44px; margin-top:16px;
+  #qCard{ font-size:clamp(56px,11vw,92px); font-weight:bold; color:#14402a; line-height:1.2; text-align:center;
+    background:#fff; border:6px solid #6fbf87; border-radius:30px; padding:6px 36px; margin-top:10px;
     box-shadow:0 6px 0 rgba(40,110,65,.3); letter-spacing:.04em; }
   /* 数える問題の物置き場（タップで印が付く＝数え間違い防止） */
-  #objBox{ margin-top:16px; background:rgba(255,255,255,.85); border:5px solid #6fbf87; border-radius:30px;
-    padding:18px 22px; max-width:min(92vw, 600px); display:none; flex-wrap:wrap; justify-content:center; gap:10px 14px;
+  #objBox{ margin-top:10px; background:rgba(255,255,255,.85); border:5px solid #6fbf87; border-radius:30px;
+    padding:12px 18px; max-width:min(92vw, 600px); display:none; flex-wrap:wrap; justify-content:center; gap:8px 12px;
     box-shadow:0 6px 0 rgba(40,110,65,.25); }
   #objBox.show{ display:flex; }
-  .objItem{ position:relative; font-size:clamp(44px,8vw,64px); line-height:1.15; cursor:pointer; border-radius:18px; padding:2px 6px; }
+  .objItem{ position:relative; font-size:clamp(40px,7vw,56px); line-height:1.15; cursor:pointer; border-radius:18px; padding:2px 6px; }
   .objItem.marked{ background:#ffe3ee; box-shadow:inset 0 0 0 4px #ff8fab; }
   .objItem .num{ position:absolute; top:-10px; right:-8px; background:#ff5b8a; color:#fff; border-radius:50%;
     width:30px; height:30px; font-size:19px; font-weight:bold; display:flex; align-items:center; justify-content:center;
     box-shadow:0 2px 0 rgba(150,40,80,.4); }
 
   /* 選択肢タイル（2×2・特大） */
-  #tiles{ margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:14px; width:min(92vw, 640px); }
+  #tiles{ margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(92vw, 640px); }
   .tile{ cursor:pointer; font-family:inherit; background:#fff; border:5px solid #6fbf87; border-radius:30px;
-    display:flex; align-items:center; justify-content:center; padding:14px 10px;
+    display:flex; align-items:center; justify-content:center; padding:10px;
     box-shadow:0 6px 0 rgba(40,110,65,.3); transition:opacity .4s ease, transform .15s ease; }
   .tile:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(40,110,65,.3); }
-  .tile .txt{ font-size:clamp(42px,9vw,68px); font-weight:bold; color:#27543a; line-height:1.2; }
+  .tile .txt{ font-size:clamp(38px,8vw,60px); font-weight:bold; color:#27543a; line-height:1.2; }
+  /* 背の低い画面ではさらに詰める（選択肢と「もどる」を絶対に被らせない） */
+  @media (max-height:700px){
+    #qArea{ padding-top:64px; }
+    #qText{ font-size:26px; }
+    #qCard{ font-size:72px; }
+    .objItem{ font-size:44px; }
+    .tile .txt{ font-size:44px; }
+  }
   .tile.wrong{ opacity:.28; pointer-events:none; filter:grayscale(.6); }
   .tile.right{ border-color:#ff8fab; background:#fff0f5; animation:rightPop .5s cubic-bezier(.2,1.6,.4,1); }
   @keyframes rightPop{ 0%{ transform:scale(.92);} 60%{ transform:scale(1.06);} 100%{ transform:scale(1);} }

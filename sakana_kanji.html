@@ -21,25 +21,33 @@
     padding:8px 30px; font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
 
   /* 問題 */
-  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:84px 16px 108px; }
+  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:74px 16px 96px; }
   #qText{ font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#1d4a6b; text-align:center; line-height:1.45;
-    background:rgba(255,255,255,.88); border:4px solid #5b93b8; border-radius:26px; padding:14px 30px; box-shadow:0 4px 0 rgba(30,70,100,.25); }
-  #qKanji{ font-size:clamp(84px,18vw,150px); font-weight:bold; color:#12395a; line-height:1.15; text-align:center;
-    background:#fff; border:6px solid #7db3dd; border-radius:30px; padding:6px 42px; margin-top:16px;
+    background:rgba(255,255,255,.88); border:4px solid #5b93b8; border-radius:26px; padding:10px 26px; box-shadow:0 4px 0 rgba(30,70,100,.25); white-space:nowrap; }
+  #qKanji{ font-size:clamp(72px,14.5vw,124px); font-weight:bold; color:#12395a; line-height:1.15; text-align:center;
+    background:#fff; border:6px solid #7db3dd; border-radius:30px; padding:4px 36px; margin-top:10px;
     box-shadow:0 6px 0 rgba(50,100,150,.3); }
   /* 正解時に出る魚の絵（場所は常に確保して画面が跳ねないようにする） */
-  #qFish{ height:clamp(56px,11vw,84px); font-size:clamp(52px,10.5vw,80px); line-height:1.1; text-align:center;
+  #qFish{ height:clamp(42px,7.5vw,58px); font-size:clamp(38px,7.5vw,56px); line-height:1.1; text-align:center;
     opacity:0; transform:scale(.4); }
   #qFish.show{ animation:fishPop .55s cubic-bezier(.2,1.6,.4,1) forwards; }
   @keyframes fishPop{ 0%{ opacity:0; transform:scale(.4);} 100%{ opacity:1; transform:scale(1);} }
 
   /* 選択肢タイル（2×2・特大） */
-  #tiles{ margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:14px; width:min(92vw, 640px); }
+  #tiles{ margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(92vw, 640px); }
   .tile{ cursor:pointer; font-family:inherit; background:#fff; border:5px solid #7db3dd; border-radius:30px;
-    display:flex; align-items:center; justify-content:center; padding:14px 10px;
+    display:flex; align-items:center; justify-content:center; padding:10px;
     box-shadow:0 6px 0 rgba(50,100,150,.3); transition:opacity .4s ease, transform .15s ease; }
   .tile:active{ transform:translateY(3px); box-shadow:0 2px 0 rgba(50,100,150,.3); }
-  .tile .txt{ font-size:clamp(38px,8vw,62px); font-weight:bold; color:#33526e; line-height:1.2; }
+  .tile .txt{ font-size:clamp(34px,7vw,54px); font-weight:bold; color:#33526e; line-height:1.2; }
+  /* 背の低い画面ではさらに詰める（選択肢と「もどる」を絶対に被らせない） */
+  @media (max-height:700px){
+    #qArea{ padding-top:64px; }
+    #qText{ font-size:26px; }
+    #qKanji{ font-size:92px; }
+    #qFish{ height:40px; font-size:38px; }
+    .tile .txt{ font-size:40px; }
+  }
   .tile.wrong{ opacity:.28; pointer-events:none; filter:grayscale(.6); }
   .tile.right{ border-color:#ff8fab; background:#fff0f5; animation:rightPop .5s cubic-bezier(.2,1.6,.4,1); }
   @keyframes rightPop{ 0%{ transform:scale(.92);} 60%{ transform:scale(1.06);} 100%{ transform:scale(1);} }
@@ -104,7 +112,7 @@
 </div>
 
 <div id="qArea">
-  <div id="qText">この かんじ、<br>なんと よむ？</div>
+  <div id="qText">この かんじ、なんと よむ？</div>
   <div id="qKanji">鮪</div>
   <div id="qFish"></div>
   <div id="tiles"></div>

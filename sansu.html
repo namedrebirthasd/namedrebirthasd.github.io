@@ -67,6 +67,13 @@
   @keyframes judgePop{ 0%{ opacity:0; transform:scale(.4);} 30%{ opacity:1; transform:scale(1.08);} 45%{ transform:scale(1);} 80%{ opacity:1;} 100%{ opacity:0; transform:scale(1.02);} }
   .spark{ position:fixed; z-index:46; pointer-events:none; animation:sparkFly .8s ease-out forwards; }
   @keyframes sparkFly{ from{ transform:translate(-50%,-50%) scale(1); opacity:1;} to{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); opacity:0;} }
+  /* 問題が切り替わる瞬間の演出：画面全体の閃光＋出題ポップ（2026-11-24追加） */
+  #flashFx{ position:fixed; inset:0; z-index:44; pointer-events:none; opacity:0;
+    background:radial-gradient(circle at 50% 42%, rgba(255,255,255,.95) 0%, rgba(255,244,190,.75) 34%, rgba(255,244,190,0) 72%); }
+  #flashFx.go{ animation:flashGo .5s ease-out; }
+  @keyframes flashGo{ 0%{ opacity:0; } 18%{ opacity:1; } 100%{ opacity:0; } }
+  #qArea.qin{ animation:qIn .45s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes qIn{ 0%{ transform:scale(.93); opacity:.25; } 100%{ transform:scale(1); opacity:1; } }
 
   /* ナビちゃん */
   #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(96px,17vw,150px); pointer-events:none; }
@@ -210,6 +217,29 @@ function tone(freq, t0, dur, type, vol){
 function seCorrect(){ if(!seOn) return; const t = ac().currentTime; [523,659,784,1047].forEach((f,i)=> tone(f, t + i*0.1, 0.34, "triangle", 0.2)); }
 function seWrong(){ if(!seOn) return; const t = ac().currentTime; tone(330, t, 0.18, "sine", 0.12); tone(262, t + 0.14, 0.24, "sine", 0.12); }
 function seTap(){ if(!seOn) return; tone(700, ac().currentTime, 0.08, "sine", 0.1); }
+/* 問題切り替わりの「シャンッ」という音 */
+function seShine(){ if(!seOn) return; const t = ac().currentTime; [1568, 2093, 2637].forEach((f,i)=> tone(f, t + i*0.045, 0.32, "sine", 0.16)); tone(3136, t + 0.14, 0.42, "sine", 0.1); }
+/* 問題が切り替わる瞬間の演出：閃光＋画面いっぱいのキラキラ＋出題ポップ＋音 */
+function questionInFx(){
+  let fx = document.getElementById("flashFx");
+  if(!fx){ fx = document.createElement("div"); fx.id = "flashFx"; document.body.appendChild(fx); }
+  fx.classList.remove("go"); void fx.offsetWidth; fx.classList.add("go");
+  const cx = window.innerWidth / 2, cy = window.innerHeight * 0.42;
+  const R = Math.max(window.innerWidth, window.innerHeight);
+  for(let i = 0; i < 34; i++){
+    const el = document.createElement("div");
+    el.className = "spark"; el.textContent = ["⭐","✨","💫","❇️"][i % 4];
+    el.style.left = cx + "px"; el.style.top = cy + "px";
+    el.style.fontSize = (22 + Math.random()*22) + "px";
+    const ang = Math.random()*6.283, d = 120 + Math.random()*R*0.34;
+    el.style.setProperty("--dx", Math.cos(ang)*d + "px");
+    el.style.setProperty("--dy", Math.sin(ang)*d*0.8 + "px");
+    document.body.appendChild(el); setTimeout(()=> el.remove(), 850);
+  }
+  const qa = document.getElementById("qArea");
+  qa.classList.remove("qin"); void qa.offsetWidth; qa.classList.add("qin");
+  seShine();
+}
 function seCount(n){ if(!seOn) return; tone(440 + n * 55, ac().currentTime, 0.16, "triangle", 0.16); }
 const PENTA = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3];
 let bgmTimer = null, bgmStep = 0;
@@ -322,6 +352,7 @@ function nextQuestion(){
     qCard.style.display = "";
   }
   renderTiles();
+  questionInFx();
 }
 function renderTiles(){
   tilesEl.innerHTML = "";

@@ -21,7 +21,7 @@
     padding:8px 30px; font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#a03d63; box-shadow:0 4px 0 rgba(150,60,90,.3); white-space:nowrap; }
 
   /* 問題 */
-  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:74px 16px 96px; }
+  #qArea{ position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; padding:100px 16px 96px; }
   #qText{ font-size:clamp(24px,4.6vw,38px); font-weight:bold; color:#1d5c38; text-align:center; line-height:1.45;
     background:rgba(255,255,255,.88); border:4px solid #4da56b; border-radius:26px; padding:10px 26px; box-shadow:0 4px 0 rgba(25,80,45,.25); }
   /* 計算式のカード */
@@ -48,11 +48,11 @@
   .tile .txt{ font-size:clamp(38px,8vw,60px); font-weight:bold; color:#27543a; line-height:1.2; }
   /* 背の低い画面ではさらに詰める（選択肢と「もどる」を絶対に被らせない） */
   @media (max-height:700px){
-    #qArea{ padding-top:64px; }
+    #qArea{ padding-top:100px; }
     #qText{ font-size:26px; }
-    #qCard{ font-size:72px; }
+    #qCard{ font-size:64px; }
     .objItem{ font-size:44px; }
-    .tile .txt{ font-size:44px; }
+    .tile .txt{ font-size:40px; }
   }
   .tile.wrong{ opacity:.28; pointer-events:none; filter:grayscale(.6); }
   .tile.right{ border-color:#ff8fab; background:#fff0f5; animation:rightPop .5s cubic-bezier(.2,1.6,.4,1); }
@@ -71,12 +71,14 @@
   /* ナビちゃん */
   #choco{ position:fixed; left:10px; bottom:86px; z-index:20; width:clamp(96px,17vw,150px); pointer-events:none; }
   #choco img{ width:100%; display:block; }
-  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(96px,17vw,150px) + 6px); z-index:20; max-width:min(56vw,400px);
+  #bubble{ position:fixed; left:14px; bottom:calc(86px + clamp(96px,17vw,150px) + 6px); z-index:20; max-width:min(44vw,320px);
     background:#fff; border:4px solid #f0b429; border-radius:20px; padding:12px 18px;
     font-size:clamp(19px,3.4vw,27px); font-weight:bold; color:#5a4512; box-shadow:0 4px 0 rgba(140,90,20,.3);
     pointer-events:none; transition:opacity .6s ease; }
   #bubble.faded{ opacity:0; }
   #bubble:after{ content:""; position:absolute; left:44px; bottom:-16px; border:8px solid transparent; border-top:10px solid #f0b429; }
+  /* 背の低い画面：吹き出しを細くして、選択肢の数字の左端を隠さない（8が3に見える事故の防止） */
+  @media (max-height:700px){ #bubble{ max-width:260px; font-size:19px; } }
 
   #fadeVeil{ position:fixed; inset:0; z-index:35; background:#fff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
 
@@ -121,7 +123,7 @@
   <div id="tiles"></div>
 </div>
 
-<div id="bubble">かずの クイズだよ！<br>タップして かぞえても いいよ 😊</div>
+<div id="bubble">かずの クイズだよ！😊</div>
 <div id="choco"><img id="naviImg" src="character.png" alt="" onerror="this.parentNode.style.display='none'"></div>
 
 <div id="judge">⭕</div>
@@ -147,7 +149,8 @@
 <script>
 "use strict";
 /* ============================================================
-   さんすうクイズ v1.0（老人向け・脳トレ）
+   さんすうクイズ v1.1（老人向け・脳トレ）
+   v1.1（2026-11-23）：たし算・ひき算を2けたに格上げ／カウンターと問題文の重なり修正
    数える（タップで印を付けながら数えられる）＋たし算＋ひき算。
    起動したら即1問目。モード選択・設定・タイマーなし。
    間違えてもタイルが薄くなるだけ（消去法で必ず正解できる）。
@@ -177,13 +180,15 @@ function buildRound(){
     const n = ri(2, 10);
     qs.push({ type:"count", emo: COUNT_EMOS[ri(0, COUNT_EMOS.length-1)], n, ans: n, opts: makeOpts(n) });
   }
+  /* たし算・ひき算は2けた（2026-11-23 格上げ：1けたは易しすぎて「しょうもない」と言われた） */
   for(let i = 0; i < 3; i++){
     let a, b;
-    do { a = ri(1, 9); b = ri(1, 9); } while(a + b > 12);
+    do { a = ri(14, 79); b = ri(5, 49); } while(a + b > 99);
     qs.push({ type:"add", a, b, ans: a + b, opts: makeOpts(a + b) });
   }
   for(let i = 0; i < 3; i++){
-    const a = ri(3, 10), b = ri(1, a);
+    let a, b;
+    do { a = ri(28, 99); b = ri(6, a - 5); } while(a - b < 5);
     qs.push({ type:"sub", a, b, ans: a - b, opts: makeOpts(a - b) });
   }
   return shuffle(qs);

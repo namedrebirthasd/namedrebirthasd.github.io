@@ -848,19 +848,9 @@ const MascotFeature = (() => {
 })();
 </script>
 <script>
-/* 自動リロード（2026-11-22追加）：常時表示のままだと更新が画面に届かないため、
-   毎朝4時ちょうどに、ゲームの窓が閉じている時だけページを読み直す。
-   これで名前変更やゲーム追加が、放っておいても翌朝には反映される */
-(function(){
-  "use strict";
-  setInterval(function(){
-    var now = new Date();
-    if (now.getHours() === 4 && now.getMinutes() === 0) {
-      var ov = document.getElementById("gameOverlay");
-      if (!ov || !ov.classList.contains("open")) location.reload();
-    }
-  }, 20000);
-})();
+/* 自動リロードは廃止（2026-11-27 本人指示）：毎朝4時の読み直しでフルスクリーンが
+   外れてしまうため。フルスクリーンはブラウザの規則で「人のタップ」が無いと
+   自動では戻せない。更新の反映は手動リロードで行う */
 </script>
 <script>
 /* ============================================================

@@ -40,16 +40,19 @@
   .hole.up .tako{ transform:translate(-50%,0) scale(1); }
   .hole.hit .tako{ transform:translate(-50%,8%) scale(1.25,.35); transition:transform .08s; }
   .tako.gold{ filter:drop-shadow(0 0 14px gold) drop-shadow(0 4px 4px rgba(90,40,0,.35)); }
-  .rim{ position:absolute; left:50%; bottom:6px; transform:translateX(-50%); z-index:3;
+  .rim{ position:absolute; left:50%; bottom:6px; transform:translateX(-50%); z-index:1;
     width:clamp(110px,20vmin,160px); height:clamp(34px,6vmin,48px);
     background:radial-gradient(ellipse at 50% 38%, #8a5a30 0%, #6e4423 55%, #54331a 100%);
     border-radius:50%; box-shadow:inset 0 -8px 10px rgba(0,0,0,.45), 0 4px 6px rgba(90,40,0,.3); pointer-events:none; }
   .burst{ position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; pointer-events:none;
-    font-size:clamp(30px,6vmin,46px); font-weight:bold; color:#e0331f; text-shadow:0 2px 0 #fff, 0 0 12px #ffd23a;
+    font-size:clamp(40px,8vmin,62px); font-weight:bold; color:#e0331f; text-shadow:0 2px 0 #fff, 0 0 12px #ffd23a;
     opacity:0; white-space:nowrap; }
   .hole.hit .burst{ animation:burstPop .5s ease-out forwards; }
   @keyframes burstPop{ 0%{ opacity:0; transform:translateX(-50%) scale(.5);} 30%{ opacity:1; transform:translateX(-50%) scale(1.25);} 100%{ opacity:0; transform:translateX(-50%) translateY(-26px) scale(1);} }
   .spark{ position:fixed; z-index:46; pointer-events:none; animation:sparkFly .8s ease-out forwards; }
+  .ringFx{ position:fixed; z-index:45; border:9px solid rgba(255,120,30,.95); border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); }
+  .flyTako{ position:fixed; z-index:46; pointer-events:none; line-height:1; }
+  .confetti{ position:fixed; top:-50px; z-index:46; pointer-events:none; line-height:1; }
   @keyframes sparkFly{ 0%{ transform:translate(0,0) scale(1); opacity:1; } 100%{ transform:translate(var(--dx),var(--dy)) scale(.4); opacity:0; } }
 
   /* ナビちゃんと吹き出し */
@@ -70,10 +73,10 @@
   @keyframes flashGo{ 0%{ opacity:0; } 18%{ opacity:1; } 100%{ opacity:0; } }
   /* ばくはつの大きな文字 */
   #boomText{ position:fixed; inset:0; z-index:47; display:flex; align-items:center; justify-content:center; pointer-events:none;
-    font-size:clamp(52px,11vw,110px); font-weight:bold; color:#f22e2e; -webkit-text-stroke:3px #fff;
+    font-size:clamp(40px,8.2vw,86px); font-weight:bold; color:#f22e2e; white-space:nowrap; -webkit-text-stroke:3px #fff;
     text-shadow:0 6px 0 rgba(160,40,0,.35), 0 0 34px #ffd23a; opacity:0; }
-  #boomText.go{ animation:boomGo 2.2s cubic-bezier(.2,1.4,.4,1) forwards; }
-  @keyframes boomGo{ 0%{ opacity:0; transform:scale(.3) rotate(-6deg);} 18%{ opacity:1; transform:scale(1.15) rotate(2deg);} 30%{ transform:scale(1);} 80%{ opacity:1;} 100%{ opacity:0; transform:scale(1.05);} }
+  #boomText.go{ animation:boomGo 2.9s cubic-bezier(.2,1.4,.4,1) forwards; }
+  @keyframes boomGo{ 0%{ opacity:0; transform:scale(.3) rotate(-6deg);} 14%{ opacity:1; transform:scale(1.22) rotate(2deg);} 24%{ transform:scale(.96);} 34%{ transform:scale(1.12) rotate(-1deg);} 46%{ transform:scale(1);} 82%{ opacity:1;} 100%{ opacity:0; transform:scale(1.06);} }
 
   #fadeVeil{ position:fixed; inset:0; z-index:35; background:#fff; opacity:0; pointer-events:none; transition:opacity .8s ease; }
 
@@ -238,14 +241,14 @@ for(let i = 0; i < 6; i++){
   st.tako.addEventListener("click", () => hitHole(st));
   holes.push(st);
 }
-function sparks(x, y, n, emojis){
+function sparks(x, y, n, emojis, big){
   for(let i = 0; i < (n || 10); i++){
     const s = document.createElement("span");
     s.className = "spark";
     s.textContent = emojis[Math.floor(Math.random()*emojis.length)];
     s.style.left = x + "px"; s.style.top = y + "px";
-    s.style.fontSize = (18 + Math.random()*22) + "px";
-    const ang = Math.random()*Math.PI*2, dist = 60 + Math.random()*110;
+    s.style.fontSize = (big ? 28 + Math.random()*40 : 18 + Math.random()*22) + "px";
+    const ang = Math.random()*Math.PI*2, dist = big ? 110 + Math.random()*230 : 60 + Math.random()*110;
     s.style.setProperty("--dx", Math.cos(ang)*dist + "px");
     s.style.setProperty("--dy", (Math.sin(ang)*dist - 40) + "px");
     document.body.appendChild(s);
@@ -281,7 +284,15 @@ function hitHole(st){
   setTimeout(() => st.el.classList.remove("hit"), 240);
   const gain = st.gold ? 3 : 1;
   const r = st.tako.getBoundingClientRect();
-  sparks(r.left + r.width/2, r.top + r.height/3, st.gold ? 16 : 10, st.gold ? ["✨","⭐","💛","✨"] : ["💥","⭐","✨"]);
+  const cx = r.left + r.width/2, cy = r.top + r.height/3;
+  sparks(cx, cy, st.gold ? 42 : 26, st.gold ? ["✨","⭐","💛","✨","🎵"] : ["💥","⭐","✨","💫"], true);
+  const ring = document.createElement("div");
+  ring.className = "ringFx"; ring.style.left = cx + "px"; ring.style.top = cy + "px";
+  document.body.appendChild(ring);
+  ring.animate([ { width: "36px", height: "36px", opacity: 1 }, { width: "260px", height: "260px", opacity: 0 } ], { duration: 500, easing: "ease-out" }).onfinish = () => ring.remove();
+  document.getElementById("stage").animate([
+    { transform: "translate(0,0)" }, { transform: "translate(-5px,3px)" }, { transform: "translate(5px,-3px)" }, { transform: "translate(0,0)" }
+  ], { duration: 140 });
   if(st.gold){ seGold(); say("きんの タコ！ 3ひきぶん！ ✨", 1800); } else seHit();
   hits = Math.min(GOAL, hits + gain);
   totalHits += gain;
@@ -298,20 +309,71 @@ function hitHole(st){
 const flashFx = document.createElement("div"); flashFx.id = "flashFx"; document.body.appendChild(flashFx);
 const boomText = document.createElement("div"); boomText.id = "boomText"; boomText.textContent = "💥 ストレス ばくはつ！"; document.body.appendChild(boomText);
 const resultEl = document.getElementById("result");
+function bigBurst(x, y, n){
+  sparks(x, y, n, ["💥","⭐","✨","🎉","💢","🎵","🔥"], true);
+}
+function flyTakos(){
+  const cx = window.innerWidth/2, cy = window.innerHeight/2;
+  for(let i = 0; i < 9; i++){
+    const t = document.createElement("span");
+    t.className = "flyTako"; t.textContent = "🐙";
+    t.style.left = cx + "px"; t.style.top = cy + "px";
+    t.style.fontSize = (54 + Math.random()*58) + "px";
+    document.body.appendChild(t);
+    const ang = (i / 9) * Math.PI * 2 + Math.random() * .5;
+    const dist = window.innerWidth * (0.3 + Math.random() * 0.25);
+    t.animate([
+      { transform: "translate(-50%,-50%) rotate(0deg) scale(.6)", opacity: 1 },
+      { transform: `translate(${Math.cos(ang)*dist - 30}px, ${Math.sin(ang)*dist - 120}px) rotate(${Math.random()*540 - 270}deg) scale(1.15)`, opacity: 0 }
+    ], { duration: 1250 + Math.random()*500, easing: "cubic-bezier(.1,.7,.3,1)" }).onfinish = () => t.remove();
+  }
+}
+function confettiRain(){
+  const emos = ["🎉","⭐","✨","🎊","💛","🧡"];
+  for(let i = 0; i < 38; i++){
+    const c = document.createElement("span");
+    c.className = "confetti";
+    c.textContent = emos[Math.floor(Math.random()*emos.length)];
+    c.style.left = (Math.random() * 98) + "vw";
+    c.style.fontSize = (22 + Math.random()*30) + "px";
+    document.body.appendChild(c);
+    c.animate([
+      { transform: "translateY(0) rotate(0deg)", opacity: 1 },
+      { transform: `translateY(108vh) rotate(${Math.random()*720 - 360}deg)`, opacity: .85 }
+    ], { duration: 1900 + Math.random()*1100, delay: Math.random()*450, easing: "ease-in" }).onfinish = () => c.remove();
+  }
+}
 function finish(){
   finished = true;
   holes.forEach(hideHole);
+  const W = window.innerWidth, H = window.innerHeight;
+  /* 第1波：中央で大爆発＋画面シェイク */
   seBoom();
   flashFx.classList.remove("go"); void flashFx.offsetWidth; flashFx.classList.add("go");
   boomText.classList.remove("go"); void boomText.offsetWidth; boomText.classList.add("go");
   setNavi(NAVI_ODOROKI);
-  sparks(window.innerWidth/2, window.innerHeight/2, 34, ["💥","⭐","✨","🎉","💢"]);
-  say("ばくはつー！ すっきり！", 2600);
+  bigBurst(W/2, H/2, 60);
+  document.body.animate([
+    { transform: "translate(0,0)" }, { transform: "translate(-13px,8px)" }, { transform: "translate(11px,-9px)" },
+    { transform: "translate(-8px,-6px)" }, { transform: "translate(7px,5px)" }, { transform: "translate(0,0)" }
+  ], { duration: 560, easing: "ease-out" });
+  say("ばくはつー！ すっきり！", 2800);
+  /* 第2波：タコが四方へ飛ぶ＋3点で追加爆発 */
+  setTimeout(() => {
+    if(seOn){ noiseBurst(0, .5, .5, 420); tone(90, 0, .5, "sawtooth", .22, 28); }
+    flashFx.classList.remove("go"); void flashFx.offsetWidth; flashFx.classList.add("go");
+    flyTakos();
+    bigBurst(W*0.22, H*0.34, 30);
+    bigBurst(W*0.8, H*0.3, 30);
+    bigBurst(W*0.5, H*0.72, 30);
+  }, 430);
+  /* 第3波：紙吹雪の雨 */
+  setTimeout(() => { confettiRain(); bigBurst(W/2, H*0.4, 36); }, 900);
   setTimeout(() => {
     setNavi(NAVI_WARAI);
     document.getElementById("rTotal").textContent = String(totalHits);
     resultEl.classList.add("show");
-  }, 2300);
+  }, 3000);
 }
 document.getElementById("againBtn").addEventListener("click", () => {
   resultEl.classList.remove("show");

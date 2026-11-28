@@ -838,13 +838,43 @@ const MascotFeature = (() => {
   "use strict";
   var overlay = document.getElementById("gameOverlay");
   var frame = document.getElementById("gameFrame");
-  function openGames(){ frame.src = "games.html"; overlay.classList.add("open"); }
-  function closeGames(){ overlay.classList.remove("open"); frame.src = "about:blank"; }
+  /* 無操作で時計に戻るタイマー（2026-11-29）：タイマーは各ゲームではなく親（時計）が持つ。
+     理由は、ゲーム側に持たせると「59分で別ゲームに移った直後に前のタイマーが発火して
+     遊んでいる最中に時計へ戻される」事故が起きるため。親が持ち、(1)窓を開いた時
+     (2)ゲーム画面が切り替わった時 (3)画面の中でタップがあった時、の3つで巻き直す。
+     つまり「最後の操作から1時間」でだけ発火し、遊んでいる間は絶対に戻らない。
+     発火すると窓が閉じて iframe が空になるので、鳴り続けていた音楽も止まる。 */
+  var IDLE_MS = 60 * 60 * 1000;
+  var idleTimer = null, idleDeadline = 0;
+  function armIdle(){
+    if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+    if(!overlay.classList.contains("open")){ idleDeadline = 0; return; }
+    idleDeadline = Date.now() + IDLE_MS;
+    idleTimer = setTimeout(closeGames, IDLE_MS);
+  }
+  function hookFrameActivity(){
+    try{
+      var doc = frame.contentDocument;
+      if(doc){
+        doc.addEventListener("pointerdown", armIdle, { passive: true });
+        doc.addEventListener("touchstart", armIdle, { passive: true });
+      }
+    }catch(e){ /* 読めない時は load の巻き直しだけに頼る */ }
+  }
+  frame.addEventListener("load", function(){ armIdle(); hookFrameActivity(); });
+  function openGames(){ frame.src = "games.html"; overlay.classList.add("open"); armIdle(); }
+  function closeGames(){
+    if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+    idleDeadline = 0;
+    overlay.classList.remove("open"); frame.src = "about:blank";
+  }
   var entry = document.querySelector("a.slot-entry");
   if(entry) entry.addEventListener("click", function(e){ e.preventDefault(); openGames(); });
   document.getElementById("gameClose").addEventListener("click", closeGames);
   addEventListener("message", function(e){ if(e.data === "closeGame") closeGames(); });
-  window.__clockOverlay = { open: openGames, close: closeGames, isOpen: function(){ return overlay.classList.contains("open"); } };
+  window.__clockOverlay = { open: openGames, close: closeGames, isOpen: function(){ return overlay.classList.contains("open"); },
+    idleLeft: function(){ return idleDeadline ? Math.max(0, idleDeadline - Date.now()) : -1; },
+    setIdleMs: function(ms){ IDLE_MS = ms; armIdle(); } };
 })();
 </script>
 <script>
